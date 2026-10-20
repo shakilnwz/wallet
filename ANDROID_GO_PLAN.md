@@ -1,23 +1,30 @@
-# Native Android App with Go (Wallet) — Architectural & Implementation Plan
+# Native Android App with Pure Go & Gio UI (`gogio`) — Plan
 
 > **Branch:** `native-android-go`  
-> **Target:** Native Android personal expense & income tracker powered by Go, with local SQLite storage and peer-to-peer local network sync.
+> **Architecture:** 100% Pure Go Mobile & Desktop Application  
+> **UI Engine:** Gio UI (`gioui.org`) compiled via `gogio`  
+> **Database:** Pure-Go SQLite (`modernc.org/sqlite` — zero CGO)  
+> **Sync Engine:** Local Network Peer-to-Peer (mDNS + TLS + Last-Write-Wins UUIDs)
 
 ---
 
-## 1. Executive Summary & Technology Selection
+## 1. Executive Summary & Strategy
 
-The goal is to build a high-performance native Android application where the core business logic, SQLite database operations, and local network cross-device sync are driven by **Go**, while taking full advantage of native Android phone hardware, display, and ergonomics.
+We will build the native Android Wallet app as a **100% pure Go application** using **Gio UI (`gioui.org`)** compiled directly to an Android APK via **`gogio`**.
 
-### Architectural Approaches Comparison
-
-| Architecture | UI Layer | Core Engine | Pros | Trade-offs | Recommendation |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Option A: Hybrid Native (Compose + Go)** | **Jetpack Compose** (Kotlin) | **Go Core** via `gomobile bind` (`.aar`) | • 100% native Android Material 3 look & feel<br>• 120Hz gesture physics and animations<br>• Native system widgets & quick settings<br>• Go handles SQLite & networking concurrently | • Requires two toolchains (Gradle + Go) | ⭐ **Recommended (Best UX & Stability)** |
-| **Option B: Pure Go (Gio UI)** | **Gio UI** (`gioui.org`) | **Go Core** | • Single language (100% Go)<br>• Tiny APK (~12MB)<br>• Direct Vulkan/OpenGL ES rendering | • Custom widgets needed for Material 3<br>• Less native Android system integration | Good for minimal pure-Go setups |
-| **Option C: Embedded Go Daemon** | **Native UI / WebView** | **Go Daemon** (HTTP / gRPC localhost) | • Standard HTTP/gRPC communication<br>• Easy desktop code sharing | • Background service lifecycle overhead on Android (Doze mode) | Sub-optimal for instant mobile launch |
-
-**Selected Strategy:** **Option A (Jetpack Compose UI + Go Core via `gomobile bind`)**, with fallback design patterns that allow the Go core engine to be shared 1:1 with desktop clients.
+### Why Gio UI & `gogio` for this Project?
+1. **Zero Gradle / Zero Java / Zero Kotlin**:
+   - The entire application is written in Go.
+   - `gogio` directly outputs a release-ready `.apk` or `.aab` for Android (`arm64-v8a`, `armeabi-v7a`, `x86_64`) without needing Android Studio or Gradle wrappers.
+2. **True Cross-Platform (Mobile & Desktop Shared 100%)**:
+   - The exact same Go code runs on **Android** (`gogio -target android`) and on **Desktop** (Linux, macOS, Windows via `go run .`).
+   - This makes local network sync seamless because both your phone and desktop run the identical Go SQLite engine, models, and sync protocols.
+3. **Hardware-Accelerated Fluid Performance**:
+   - Gio compiles down to raw Vulkan / OpenGL ES 2.0+ on Android with its own retained vector rendering pipeline.
+   - High refresh-rate touch interactions (90Hz / 120Hz displays).
+   - Cold-start launch time under **100ms** on mobile devices.
+4. **Lightweight Distribution**:
+   - Final Android APK size is only **~12 – 15 MB**.
 
 ---
 
@@ -25,38 +32,94 @@ The goal is to build a high-performance native Android application where the cor
 
 ```mermaid
 flowchart TD
-    subgraph AndroidApp["📱 Native Android App (Kotlin & Compose)"]
-        UI["Jetpack Compose UI\n(Material 3, Dark Theme, 120Hz Animations)"]
-        VM["Android ViewModels\n(Coroutines & StateFlow)"]
-        Bridge["JNI / GoMobile Bindings Wrapper"]
-        UI <--> VM
-        VM <--> Bridge
-    end
-
-    subgraph GoCore["🐹 Go Core Engine (Compiled to .aar via gomobile bind)"]
-        GoAPI["Go Public API Facade\n(WalletCore.go)"]
-        SQLiteEngine["Pure-Go SQLite Engine\n(modernc.org/sqlite)"]
-        SyncEngine["P2P Local Sync Engine\n(mDNS / TLS / LWW Conflict Resolver)"]
-        Models["Domain Models & Calculations\n(Transactions, Accounts, UUIDs)"]
+    subgraph App["🐹 Pure Go Application (gioui.org)"]
+        UI["🎨 Gio UI Layer\n(Immediate-Mode Vector Render)"]
+        Router["📱 View Router\n(Dashboard | Ledger | Analytics | Sync)"]
+        QuickAdd["⚡ Quick-Add Bottom Sheet\n(Custom Touch Numeric Keypad)"]
         
-        GoAPI --> Models
-        GoAPI --> SQLiteEngine
-        GoAPI --> SyncEngine
-        SyncEngine <--> SQLiteEngine
+        UI --> Router
+        Router --> QuickAdd
+        
+        Service["⚙️ Wallet Core Service\n(Calculations, Account Balancing)"]
+        Router <--> Service
+        
+        DB[("💾 Pure-Go SQLite\n(modernc.org/sqlite)")]
+        Service <--> DB
+        
+        Sync["🔄 Local P2P Sync Engine\n(mDNS Discovery + TLS + LWW Merge)"]
+        Sync <--> DB
     end
 
-    Bridge <== "Native Method Calls / JNI" ==> GoAPI
-    SyncEngine <== "Local Network (Wi-Fi / LAN)" ==> DesktopPeer["💻 Desktop Wallet Client"]
+    App == "gogio -target android" ==> APK["📱 Android Device (.apk)"]
+    App == "go build" ==> Desktop["💻 Desktop Client (Linux/Mac/Win)"]
+    
+    APK <== "Wi-Fi / LAN P2P Sync\n(Mutual TLS + UUID Merge)" ==> Desktop
 ```
 
 ---
 
-## 3. The Go Core Engine (`pkg/walletcore`)
+## 3. UI/UX Blueprint for Android (Gio UI Immediate-Mode)
 
-### A. Pure-Go SQLite Database (`modernc.org/sqlite`)
-- Using `modernc.org/sqlite` instead of `mattn/go-sqlite3` eliminates the need for CGO when cross-compiling for Android architectures (`arm64-v8a`, `armeabi-v7a`, `x86_64`).
-- Automatic migrations and schema validation on startup.
+Gio UI uses an immediate-mode paradigm (`layout.Context`, `op.Ops`), granting complete pixel-level control over animations, touch targets, and layouts.
 
+### A. Color Palette & Visual Tokens (OLED Dark Theme)
+- **Background**: `#090A0F` (True OLED Black)
+- **Surface**: `#12141C`
+- **Surface Elevated**: `#1A1D29`
+- **Border / Separators**: `#262A3B`
+- **Income Accent**: `#10B981` (Emerald Green)
+- **Expense Accent**: `#F43F5E` (Rose / Crimson)
+- **Primary Brand / Action**: `#3B82F6` (Electric Blue)
+
+### B. Screen Structure & Components
+```
+┌──────────────────────────────────────────────┐
+│  WALLET ৳                       [🔄 LAN Sync]│ <- Top Bar (Title + Sync beacon status)
+├──────────────────────────────────────────────┤
+│  ┌────────────────────────────────────────┐  │
+│  │ <          OCTOBER 2026          >     │  │ <- Month Carousel
+│  │                                        │  │
+│  │ Net Balance:    ৳18,221.00            │  │ <- Hero Balance Card
+│  │ 🟢 In: ৳31,200.00    🔴 Out: ৳12,979.00│  │
+│  │ -------------------------------------- │  │
+│  │ Account: ৳18,221.00 | Cash: ৳0.00      │  │ <- Account reconciliation split
+│  │ Status: Balanced ✓                     │  │ <- "Need Balancing" sanity check
+│  └────────────────────────────────────────┘  │
+│                                              │
+│  Recent Transactions:                        │
+│  ┌────────────────────────────────────────┐  │
+│  │ 20 Oct  Groceries         -৳1,500.00   │  │
+│  │ 18 Oct  Home Internet       -৳650.00   │  │ <- Virtualized Gio List
+│  │ 15 Oct  Salary           +৳25,000.00   │  │    (layout.List with smooth fling)
+│  └────────────────────────────────────────┘  │
+│                                              │
+├──────────────────────────────────────────────┤
+│   [🏠 Home]    [📋 Ledger]    [📊 Insights]  │ <- Bottom Thumb Nav
+│                     ( ➕ )                    │ <- Elevated Center Add Action
+└──────────────────────────────────────────────┘
+```
+
+### C. Tactile Quick-Add Modal & Custom Numeric Keypad
+Tapping **( ➕ )** renders an immediate-mode overlay sheet:
+1. **Segmented Toggle**: `[Expense]` vs `[Income]`.
+2. **Large Live Display**: Amount formatted in bold BDT (`৳ 4,500.00`).
+3. **Custom On-Screen Numeric Keypad**:
+   - `[ 1 ] [ 2 ] [ 3 ]`
+   - `[ 4 ] [ 5 ] [ 6 ]`
+   - `[ 7 ] [ 8 ] [ 9 ]`
+   - `[ . ] [ 0 ] [ ⌫ ]`
+   - *Why on-screen?* Avoids Android software keyboard resize lag, ensuring instant 1-thumb entry.
+4. **Quick Category Pills**: Horizontal scroll row of chips (`Food`, `Rent`, `Wifi`, `Electricity`, `Transport`, etc.).
+5. **Account Selector**: One-tap toggle between `[Account (Bank/MFS)]` and `[Cash]`.
+6. **Date Controls**: Defaults to Today with quick buttons `[Today]` and `[Yesterday]`.
+
+---
+
+## 4. Pure-Go Database Engine (`modernc.org/sqlite`)
+
+We will use **`modernc.org/sqlite`**, a pure-Go transpilation of SQLite that **does not require CGO**. This allows cross-compiling for Android targets from any host with zero NDK toolchain friction.
+
+### Sync-Ready Schema
 ```sql
 CREATE TABLE IF NOT EXISTS transactions (
     id TEXT PRIMARY KEY,               -- UUID v4
@@ -76,111 +139,146 @@ CREATE TABLE IF NOT EXISTS transactions (
 
 CREATE INDEX IF NOT EXISTS idx_tx_date ON transactions(date);
 CREATE INDEX IF NOT EXISTS idx_tx_cat ON transactions(exp_cat);
+CREATE INDEX IF NOT EXISTS idx_tx_updated ON transactions(updated_at);
 CREATE INDEX IF NOT EXISTS idx_tx_deleted ON transactions(deleted_at);
+
+CREATE TABLE IF NOT EXISTS meta (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
 ```
 
-### B. Local Network Peer-to-Peer Sync Engine
-- **LAN Discovery**: Uses mDNS / Zeroconf (via `grandcat/zeroconf` or native Android NSD) to advertise `_wallet-sync._tcp`.
-- **Handshake & Mutual Authentication**: Generates a self-signed TLS cert and an ephemeral 6-digit PIN or QR code to pair devices on first connect.
-- **Incremental Sync Package**:
-  - Request changes since `last_sync_timestamp`.
-  - Merges remote transactions using **Last-Write-Wins (LWW)**:
-    - If `remote.id` doesn't exist $\rightarrow$ **Insert**.
-    - If `remote.id` exists and `remote.updated_at > local.updated_at` $\rightarrow$ **Update**.
-    - If `remote.deleted_at IS NOT NULL` $\rightarrow$ **Mark deleted (tombstone)** so old deletions are not resurrected.
+---
+
+## 5. Peer-to-Peer Local Network Sync Architecture
+
+Because the app is 100% Go, the sync engine is built using Go's standard library `net/http` and `crypto/tls`.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Phone as 📱 Android App (Gio)
+    participant Desktop as 💻 Desktop Client (Gio)
+    
+    Note over Phone,Desktop: Both devices connected to same Wi-Fi / Local Network
+    Desktop->>Phone: mDNS Discovery Beacon (_wallet-sync._tcp)
+    Phone->>Desktop: TLS Handshake & Ephemeral PIN / QR verification
+    Phone->>Desktop: GET /sync/changes?since=<last_sync_timestamp>
+    Desktop-->>Phone: JSON Changeset (Records with UUIDs & Timestamps)
+    Phone->>Phone: Merge Changeset using Last-Write-Wins (LWW)
+    Phone->>Desktop: POST /sync/push (Local Changes since last sync)
+    Desktop->>Desktop: Merge Changeset using Last-Write-Wins (LWW)
+    Note over Phone,Desktop: Synchronization Complete ✓ Both DBs Reconciled
+```
+
+### Conflict Resolution Rules:
+1. **New Record (Unknown UUID)** $\rightarrow$ Insert locally.
+2. **Existing Record (UUID matches)**:
+   - If `remote.updated_at > local.updated_at` $\rightarrow$ Overwrite local fields.
+   - If `local.updated_at >= remote.updated_at` $\rightarrow$ Retain local version.
+3. **Deletions (Tombstones)**:
+   - If `deleted_at` is set and newer than local update $\rightarrow$ Mark soft-deleted locally. Prevents deleted records from resurrecting across devices.
 
 ---
 
-## 4. Native Android UI (Jetpack Compose)
-
-### Mobile-First Ergonomic UX Design
-1. **Thumb Navigation**: Bottom navigation bar anchored to the bottom edge with Android 15/16 edge-to-edge system bar insets (`WindowInsets.safeDrawing`).
-2. **Rapid Quick-Add Bottom Sheet**:
-   - High-contrast, tactile numeric keypad with BDT currency symbol (৳).
-   - Instant Income/Expense segmented control.
-   - Horizontal category chips with haptic vibration feedback (`HapticFeedbackType.LongPress`).
-   - Payment method toggle: **Bank / MFS** vs **Cash**.
-3. **Hero Balance Card**:
-   - Dynamic monthly carousel (`< September 2026 >`).
-   - Net balance, Income vs Expense breakdown.
-   - **Account Reconciliation**: Real-time "Need Balancing" discrepancy calculation.
-4. **Android System Integrations**:
-   - **App Shortcuts**: Long press app icon on Android home screen $\rightarrow$ "Quick Add Expense".
-   - **Glance App Widget**: Glance/Compose widget on phone home screen showing real-time balance.
-   - **Biometric Lock**: Optional fingerprint/face unlock via `androidx.biometric`.
-
----
-
-## 5. Repository Directory Layout (for this branch)
+## 6. Repository Layout (for `native-android-go`)
 
 ```
 wallet/
-├── android/                         # Android Studio Project Root
-│   ├── app/
-│   │   ├── build.gradle.kts         # Jetpack Compose & Gradle dependencies
-│   │   ├── src/main/
-│   │   │   ├── AndroidManifest.xml
-│   │   │   ├── java/com/wallet/
-│   │   │   │   ├── MainActivity.kt
-│   │   │   │   ├── ui/              # Compose Screens (Dashboard, Ledger, Sync)
-│   │   │   │   │   ├── theme/       # Material 3 OLED Dark Palette
-│   │   │   │   │   ├── components/  # BottomSheet, Keypad, BalanceCard
-│   │   │   │   │   └── screens/
-│   │   │   │   └── viewmodels/      # StateFlow view models calling Go API
-│   │   └── libs/
-│   │       └── walletcore.aar       # Built Go Mobile library archive
-│   └── build.gradle.kts
+├── cmd/
+│   └── wallet/
+│       └── main.go                  # Main entrypoint & Gio event loop
 │
-├── core/                            # Pure Go Core Package
-│   ├── go.mod
-│   ├── go.sum
-│   ├── walletcore.go                # Public Go API exported to Java/Kotlin
-│   ├── db/
-│   │   ├── sqlite.go                # modernc.org/sqlite database layer
-│   │   └── migrations.go
-│   ├── sync/
-│   │   ├── discovery.go             # mDNS / Zeroconf LAN beacon
-│   │   ├── server.go                # Local sync HTTP/TLS server
-│   │   ├── client.go                # Client sync initiator
-│   │   └── merger.go                # LWW conflict resolution
-│   └── models/
-│       ├── transaction.go
-│       └── summary.go
+├── ui/                              # Gio UI Subsystem
+│   ├── app.go                       # Top-level window coordinator & state
+│   ├── theme.go                     # OLED dark theme & typography tokens
+│   ├── icon/                        # Custom vector icons (Home, Add, Sync)
+│   └── components/
+│       ├── header.go                # Top bar with sync indicator
+│       ├── month_selector.go        # Month carousel (< October 2026 >)
+│       ├── hero_card.go             # Net balance & account reconciliation
+│       ├── tx_list.go               # Virtualized smooth touch list
+│       ├── quick_add_sheet.go       # Bottom sheet transaction modal
+│       ├── keypad.go                # Custom on-screen numeric keypad
+│       ├── analytics_view.go        # Spending breakdown bars
+│       └── sync_view.go             # LAN pairing & sync controls
+│
+├── core/                            # Core Business Logic & Models
+│   ├── models.go                    # Transaction, AccountSummary, SyncPackage
+│   └── service.go                   # Calculations, balancing checks
+│
+├── db/                              # Database Engine
+│   ├── sqlite.go                    # modernc.org/sqlite database connection
+│   └── repository.go                # CRUD queries, indexes, migrations
+│
+├── sync/                            # P2P Local Network Sync
+│   ├── discovery.go                 # mDNS / LAN discovery beacon
+│   ├── server.go                    # Embedded HTTPS sync server
+│   ├── client.go                    # Remote peer client
+│   └── merger.go                    # LWW conflict resolution
 │
 ├── scripts/
-│   ├── build-aar.sh                 # gomobile bind build automation script
-│   └── dev-android.sh               # Run on emulator/connected phone
-└── ANDROID_GO_PLAN.md               # This planning specification
+│   ├── build-android.sh             # gogio build automation
+│   ├── run-desktop.sh               # go run . (instant desktop test)
+│   └── install-phone.sh             # adb install helper
+│
+├── go.mod                           # Go dependencies (gioui.org, modernc.org/sqlite)
+├── go.sum
+└── ANDROID_GO_PLAN.md               # This planning document
 ```
 
 ---
 
-## 6. Implementation Milestones
+## 7. Build & Tooling Setup
 
-### Milestone 1: Go Core & SQLite Engine
-- Initialize `core/` Go module with `modernc.org/sqlite`.
-- Implement CRUD operations, UUID generator, and summary calculation functions.
-- Write Go unit tests (`go test ./...`) for transaction math, balancing checks, and migrations.
+### Prerequisites
+- Go 1.22+ (installed: `go1.27.2`)
+- Android SDK (or Command Line Tools) with `platform-tools` (`adb`)
+- `gogio` CLI tool:
+  ```bash
+  go install gioui.org/cmd/gogio@latest
+  ```
 
-### Milestone 2: `gomobile bind` Pipeline & Android Scaffold
-- Install `gomobile` toolchain (`go install golang.org/x/mobile/cmd/gomobile@latest`).
-- Scaffold Android Studio project with Jetpack Compose & Material 3.
-- Build automated script `scripts/build-aar.sh` to compile `core/` into `android/app/libs/walletcore.aar`.
-- Verify Kotlin $\leftrightarrow$ Go bridge with basic transaction queries.
+### Build Commands
+1. **Run Instantly on Desktop** (for rapid development):
+   ```bash
+   go run ./cmd/wallet
+   ```
+2. **Build Android APK**:
+   ```bash
+   gogio -target android -arch arm64 -appid com.shakilnwz.wallet -o wallet.apk ./cmd/wallet
+   ```
+3. **Install on Phone via ADB**:
+   ```bash
+   adb install -r wallet.apk
+   ```
 
-### Milestone 3: Jetpack Compose Mobile Interface
-- Implement OLED Dark theme, edge-to-edge support, and bottom navigation.
-- Implement Dashboard (Balance card, account distribution, recent transaction cards).
-- Build the tactile Quick-Add bottom sheet with haptic feedback.
-- Build Ledger view with date-grouping, search, and category filters.
+---
 
-### Milestone 4: Local Network Sync Engine
-- Implement mDNS advertiser and listener in `core/sync/`.
-- Implement secure P2P TLS communication with QR-code pairing.
-- Implement incremental changelog transfer and Last-Write-Wins merging.
-- Verify two-way synchronization between two Android devices (or Android and Desktop Go client).
+## 8. Implementation Milestones
 
-### Milestone 5: Polish, Widget & Release Build
-- Add Android Home Screen widget (Glance Compose).
-- Add Biometric Authentication (Fingerprint).
-- Generate signed release APK / AAB.
+- [ ] **Milestone 1: Project Initialization & Go SQLite Layer**
+  - Initialize `go.mod` with `gioui.org` and `modernc.org/sqlite`.
+  - Implement SQLite migrations, CRUD methods, and account balancing math in `db/`.
+  - Write Go unit tests (`go test ./...`).
+
+- [ ] **Milestone 2: Gio UI Foundation & Window Loop**
+  - Set up `cmd/wallet/main.go` and Gio window event loop.
+  - Define OLED dark theme tokens (`ui/theme.go`).
+  - Implement responsive mobile frame container (`100% width, touch scrolling`).
+
+- [ ] **Milestone 3: Mobile Dashboard & Custom Keypad**
+  - Implement Top Header, Month Carousel, and Hero Balance Card.
+  - Build the touch-optimized numeric keypad (`ui/components/keypad.go`).
+  - Build the Quick-Add Bottom Sheet with category chips and payment toggles.
+  - Build the virtualized transaction ledger list (`ui/components/tx_list.go`).
+
+- [ ] **Milestone 4: Android Build Automation via `gogio`**
+  - Write `scripts/build-android.sh` to package APKs for `arm64-v8a`.
+  - Verify touch responsiveness, keypad animations, and SQLite persistence on Android device.
+
+- [ ] **Milestone 5: P2P Local Network Sync Engine**
+  - Implement mDNS LAN beacon advertiser and scanner (`sync/discovery.go`).
+  - Implement HTTPS sync endpoints with QR code / PIN verification.
+  - Implement incremental changeset exchange and Last-Write-Wins merging.
+  - Test synchronization between Android phone and Desktop app.
