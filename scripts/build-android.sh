@@ -10,6 +10,8 @@ echo "==> Building Wallet Android APK using gogio..."
 GOGIO_BIN=""
 if command -v gogio >/dev/null 2>&1; then
     GOGIO_BIN="gogio"
+elif [ -n "$(go env GOBIN 2>/dev/null)" ] && [ -x "$(go env GOBIN)/gogio" ]; then
+    GOGIO_BIN="$(go env GOBIN)/gogio"
 elif [ -n "$(go env GOPATH 2>/dev/null)" ] && [ -x "$(go env GOPATH)/bin/gogio" ]; then
     GOGIO_BIN="$(go env GOPATH)/bin/gogio"
 elif [ -x "$HOME/go/bin/gogio" ]; then
