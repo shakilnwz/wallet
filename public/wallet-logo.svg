@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <g transform="translate(256, 256) scale(3.5) translate(-75, -75)">
+    <!-- Back Bill (Darker Blue) -->
+    <path d="M 39 48.5 L 87 23 C 89.2 21.8 92 22.5 93.6 24.8 C 95.2 27 95 30 93.5 32 L 56 50 Z" fill="#3064b7" />
+    <!-- Front Bill (Vibrant Blue) -->
+    <path d="M 48.5 48.5 L 102 34 C 105 33.2 108 34.8 108.8 37.8 C 109.2 39.2 109 40.8 108.8 42.2 L 108.8 49 Z" fill="#258aef" />
+    <!-- Wallet Body (Navy Slate) -->
+    <rect x="22.5" y="51" width="101.5" height="75.5" rx="12" fill="#1f3047" />
+    <!-- Flap Separator Outline -->
+    <path d="M 124 79.5 L 106.5 79.5 C 98.5 79.5 98.5 97.5 106.5 97.5 L 124 97.5" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" />
+    <!-- Flap Clasp Button -->
+    <circle cx="108.5" cy="89.0" r="3.4" fill="#ffffff" />
+  </g>
+</svg>
