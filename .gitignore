@@ -1,25 +1,33 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+# Binaries
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.apk
+*.aab
 
-*.tsbuildinfo
-node_modules
-dist
-dist-ssr
-*.local
+# Test binary, built with `go test -c`
+*.test
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# Output of the go coverage tool
+*.out
+
+# Go workspace file
+go.work
+
+# Local SQLite databases & sync packages
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+
+# OS / Editor files
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+.idea/
+.vscode/
+*.tsbuildinfo
+node_modules/

@@ -1,73 +1,60 @@
-# Wallet — Personal Expense Tracker (PWA & SQLite)
+# Wallet — Native Android App (Pure Go & Gio UI)
 
-A modern, phone-first personal expense tracker designed specifically for Android displays. Powered by an in-browser **SQLite (WASM)** database with **UUID-based sync architecture** for future cross-device local network synchronization.
+A high-performance, mobile-first personal expense tracker written in **100% pure Go** using **Gio UI (`gioui.org`)**, compiled directly to Android using **`gogio`**.
 
-![Wallet Screenshot](public/pwa-512x512.svg)
+> **Note:** This is the `native-android-go` branch containing the pure Go native mobile and desktop application.
 
 ---
 
 ## 🌟 Key Features
 
-- **📱 Mobile-First Thumb Zone UX**:
-  - Fullscreen Standalone Progressive Web App (PWA) with zero browser address bar clutter.
-  - Native feel with bottom navigation, rapid quick-add bottom sheet, and large touch targets.
-  - OLED Dark Mode theme optimized for mobile battery life and high contrast.
-  - Safe-area inset support for Android gesture pills and camera punch-holes.
+- **📱 Pure Go Mobile-First UI**:
+  - Built with Gio UI (`gioui.org`) immediate-mode vector graphics.
+  - Custom on-screen tactile numeric keypad (`[1] [2] [3]...`) for instant 1-thumb entry without software keyboard resize delay.
+  - OLED dark theme (`#090A0F`), smooth touch fling physics, and responsive layouts.
+  - Virtualized transaction ledger and category spending progress bars.
 
-- **💾 Real In-Browser SQLite Engine**:
-  - Powered by WebAssembly (`sql.js`) with debounced IndexedDB binary persistence.
-  - 100% client-side: Zero cloud accounts, zero tracking, zero remote database.
-  - Works completely offline after initial load.
-  - One-click native **`.sqlite` database download/restore**.
+- **💾 Zero-CGO Pure-Go SQLite**:
+  - Powered by `modernc.org/sqlite`, allowing effortless cross-compilation for Android (`arm64-v8a`) without needing an Android NDK CGO toolchain.
+  - Full ACID compliance, WAL mode, and sub-millisecond local queries.
 
-- **🔄 Future Cross-Device Sync Ready**:
-  - Every transaction is assigned a **UUID v4** primary key.
-  - Distributed **Last-Write-Wins (LWW)** metadata (`created_at`, `updated_at`, `deleted_at` tombstones, and `device_id`).
-  - Export and merge sync packages between phone and desktop over local network without duplicate records or lost deletions.
+- **🔄 Peer-to-Peer Wi-Fi / Local Network Sync**:
+  - Embedded local sync HTTP server with Last-Write-Wins (LWW) conflict resolution.
+  - Every transaction is tracked via UUID v4, timestamps, and soft-delete tombstones.
+  - Seamless two-way sync between your Android phone and desktop client over local Wi-Fi without any third-party cloud.
 
-- **📊 Comprehensive Financial Ledger**:
-  - Net Balance, Monthly and All-Time totals.
-  - Account split: **Bank / MFS Account** vs. **Cash**.
-  - **Account Reconciliation / "Need Balancing"** sanity indicator.
-  - Expense categories with visual spending breakdown progress bars.
-  - Full CSV export compatible with Excel and Google Sheets.
+- **📦 Unified Codebase (Android & Desktop)**:
+  - Zero Java, Kotlin, or Gradle required.
+  - The exact same Go code runs as a native Android APK and as a Desktop application (Linux/macOS/Windows).
 
 ---
 
-## 🚀 Running Locally (with Bun)
+## 🚀 Quick Start
 
+### 1. Run on Desktop (Linux / macOS / Windows)
+For instant local testing on your computer:
 ```bash
-# 1. Install dependencies
-bun install
+go run ./cmd/wallet
+```
 
-# 2. Start the local development server
-bun dev
+### 2. Build for Android (`.apk`)
+Build the release-ready Android APK using `gogio`:
+```bash
+./scripts/build-android.sh
+```
+This generates `wallet.apk` in the project root.
 
-# 3. Build for production (GitHub Pages)
-bun run build
+### 3. Install on Connected Phone (via ADB)
+Plug in your Android phone via USB with USB Debugging enabled:
+```bash
+./scripts/install-phone.sh
 ```
 
 ---
 
-## 📱 How to Use on Your Android Phone
+## 🧪 Testing
 
-1. Deploy to GitHub Pages (or run on local network).
-2. Open the URL in **Google Chrome** on your Android phone.
-3. Tap the browser menu (**⋮**) and select **"Add to Home screen"** or **"Install app"**.
-4. The app will launch in standalone fullscreen mode just like a native Android app, with its own icon and splash screen.
-
----
-
-## 🚀 Deploying to GitHub Pages
-
-1. Push this repository to GitHub:
-   ```bash
-   git add .
-   git commit -m "Initial Wallet app with in-browser SQLite and mobile PWA"
-   git remote add origin https://github.com/<your-username>/wallet.git
-   git push -u origin master
-   ```
-2. In your GitHub repository:
-   - Go to **Settings** > **Pages**.
-   - Under **Build and deployment** > **Source**, select **GitHub Actions**.
-3. The `.github/workflows/deploy.yml` workflow will automatically build and publish your app at `https://<your-username>.github.io/wallet/`.
+Run all unit tests for the SQLite engine, models, and P2P sync server:
+```bash
+go test -v ./...
+```
