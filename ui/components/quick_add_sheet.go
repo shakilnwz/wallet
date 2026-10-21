@@ -168,7 +168,7 @@ func (s *QuickAddSheet) Layout(
 							return title.Layout(gtx)
 						}),
 						layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-							btn := material.Button(th.Theme, &s.CloseBtn, "✕")
+							btn := material.Button(th.Theme, &s.CloseBtn, "X")
 							btn.Background = theme.ColorSurfaceElevated
 							btn.Color = theme.ColorTextMuted
 							btn.CornerRadius = unit.Dp(16)

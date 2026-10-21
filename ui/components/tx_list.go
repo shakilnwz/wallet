@@ -71,10 +71,10 @@ func (l *TxList) Layout(
 									// Colored Circle Icon
 									layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 										dotColor := theme.ColorExpense
-										dotSign := "↑"
+										dotSign := "-"
 										if tx.Type == models.TypeIncome {
 											dotColor = theme.ColorIncome
-											dotSign = "↓"
+											dotSign = "+"
 										}
 										return theme.Card(gtx, dotColor, unit.Dp(8), func(gtx layout.Context) layout.Dimensions {
 											return layout.Inset{Top: unit.Dp(4), Bottom: unit.Dp(4), Left: unit.Dp(8), Right: unit.Dp(8)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
@@ -99,7 +99,7 @@ func (l *TxList) Layout(
 											}),
 											layout.Rigid(layout.Spacer{Height: unit.Dp(2)}.Layout),
 											layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-												subText := fmt.Sprintf("%s • %s • %s", tx.ExpCat, tx.Account, theme.FormatDateDisplay(tx.Date))
+												subText := fmt.Sprintf("%s | %s | %s", tx.ExpCat, tx.Account, theme.FormatDateDisplay(tx.Date))
 												sub := material.Caption(th.Theme, subText)
 												sub.Color = theme.ColorTextMuted
 												sub.TextSize = unit.Sp(10)
@@ -128,7 +128,7 @@ func (l *TxList) Layout(
 									}),
 									layout.Rigid(layout.Spacer{Width: unit.Dp(8)}.Layout),
 									layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-										btn := material.Button(th.Theme, &l.DeleteBtns[idx], "✕")
+										btn := material.Button(th.Theme, &l.DeleteBtns[idx], "X")
 										btn.Background = theme.ColorSurfaceElevated
 										btn.Color = theme.ColorExpense
 										btn.CornerRadius = unit.Dp(8)

@@ -1,6 +1,7 @@
 package theme
 
 import (
+	_ "embed"
 	"fmt"
 	"image"
 	"image/color"
@@ -8,13 +9,18 @@ import (
 	"strings"
 	"time"
 
+	"gioui.org/font/opentype"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
+	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/widget/material"
 )
+
+//go:embed fonts/NotoSansBengali-Regular.ttf
+var bengaliFontTTF []byte
 
 var (
 	ColorBackground      = color.NRGBA{R: 0x09, G: 0x0A, B: 0x0F, A: 0xFF}
@@ -35,7 +41,16 @@ type Theme struct {
 }
 
 func NewTheme() *Theme {
+	var shaper *text.Shaper
+	faces, err := opentype.ParseCollection(bengaliFontTTF)
+	if err == nil {
+		shaper = text.NewShaper(text.WithCollection(faces))
+	} else {
+		shaper = text.NewShaper()
+	}
+
 	th := material.NewTheme()
+	th.Shaper = shaper
 	th.Bg = ColorBackground
 	th.Fg = ColorTextPrimary
 	th.Palette.Fg = ColorTextPrimary

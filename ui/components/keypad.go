@@ -117,10 +117,10 @@ func (k *Keypad) Layout(gtx layout.Context, th *theme.Theme, currentVal string, 
 				k.layoutDigitBtn(gtx, th, 0),
 				layout.Rigid(layout.Spacer{Width: unit.Dp(6)}.Layout),
 				layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
-					btn := material.Button(th.Theme, &k.BkspBtn, "⌫")
+					btn := material.Button(th.Theme, &k.BkspBtn, "DEL")
 					btn.Background = theme.ColorSurfaceElevated
 					btn.Color = theme.ColorExpense
-					btn.TextSize = unit.Sp(16)
+					btn.TextSize = unit.Sp(13)
 					btn.CornerRadius = unit.Dp(10)
 					btn.Inset = layout.Inset{Top: unit.Dp(12), Bottom: unit.Dp(12)}
 					return btn.Layout(gtx)

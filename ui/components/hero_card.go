@@ -40,10 +40,10 @@ func (h *HeroCard) Layout(gtx layout.Context, th *theme.Theme, summary *models.A
 								return caption.Layout(gtx)
 							}),
 							layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-								statusText := "balanced ✓"
+								statusText := "balanced [ok]"
 								statusColor := theme.ColorIncome
 								if !summary.IsBalanced {
-									statusText = fmt.Sprintf("reconcile ৳%.2f", summary.NeedBalancing)
+									statusText = fmt.Sprintf("reconcile %s", theme.FormatCurrency(summary.NeedBalancing))
 									statusColor = theme.ColorAmber
 								}
 								lbl := material.Caption(th.Theme, statusText)
@@ -75,7 +75,7 @@ func (h *HeroCard) Layout(gtx layout.Context, th *theme.Theme, summary *models.A
 									return layout.Inset{Top: unit.Dp(8), Bottom: unit.Dp(8), Left: unit.Dp(10), Right: unit.Dp(10)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 										return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 											layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-												t := material.Caption(th.Theme, "↓ Income")
+												t := material.Caption(th.Theme, "+ Income")
 												t.Color = theme.ColorIncome
 												t.TextSize = unit.Sp(11)
 												return t.Layout(gtx)
@@ -100,7 +100,7 @@ func (h *HeroCard) Layout(gtx layout.Context, th *theme.Theme, summary *models.A
 									return layout.Inset{Top: unit.Dp(8), Bottom: unit.Dp(8), Left: unit.Dp(10), Right: unit.Dp(10)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 										return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 											layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-												t := material.Caption(th.Theme, "↑ Expense")
+												t := material.Caption(th.Theme, "- Expense")
 												t.Color = theme.ColorExpense
 												t.TextSize = unit.Sp(11)
 												return t.Layout(gtx)

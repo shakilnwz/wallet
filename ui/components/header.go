@@ -64,17 +64,17 @@ func (h *Header) Layout(gtx layout.Context, th *theme.Theme, onRefresh func(), o
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 				return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-						btn := material.Button(th.Theme, &h.RefreshBtn, "↻")
+						btn := material.Button(th.Theme, &h.RefreshBtn, "Reload")
 						btn.Background = theme.ColorSurfaceElevated
 						btn.Color = theme.ColorTextPrimary
 						btn.CornerRadius = unit.Dp(8)
-						btn.TextSize = unit.Sp(14)
-						btn.Inset = layout.UniformInset(unit.Dp(6))
+						btn.TextSize = unit.Sp(12)
+						btn.Inset = layout.Inset{Top: unit.Dp(6), Bottom: unit.Dp(6), Left: unit.Dp(10), Right: unit.Dp(10)}
 						return btn.Layout(gtx)
 					}),
 					layout.Rigid(layout.Spacer{Width: unit.Dp(8)}.Layout),
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-						btn := material.Button(th.Theme, &h.SyncBtn, "⇄ Sync")
+						btn := material.Button(th.Theme, &h.SyncBtn, "Sync")
 						btn.Background = theme.ColorSurfaceElevated
 						btn.Color = theme.ColorPrimary
 						btn.CornerRadius = unit.Dp(8)

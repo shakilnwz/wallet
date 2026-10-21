@@ -76,11 +76,11 @@ func (m *MonthSelector) Layout(
 				}.Layout(gtx,
 					// Prev button
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-						btn := material.Button(th.Theme, &m.PrevBtn, "‹")
+						btn := material.Button(th.Theme, &m.PrevBtn, "<")
 						btn.Background = theme.ColorSurfaceElevated
 						btn.Color = theme.ColorTextPrimary
 						btn.CornerRadius = unit.Dp(8)
-						btn.TextSize = unit.Sp(18)
+						btn.TextSize = unit.Sp(16)
 						btn.Inset = layout.Inset{Top: unit.Dp(2), Bottom: unit.Dp(2), Left: unit.Dp(10), Right: unit.Dp(10)}
 						return btn.Layout(gtx)
 					}),
@@ -98,11 +98,11 @@ func (m *MonthSelector) Layout(
 
 					// Next button
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-						btn := material.Button(th.Theme, &m.NextBtn, "›")
+						btn := material.Button(th.Theme, &m.NextBtn, ">")
 						btn.Background = theme.ColorSurfaceElevated
 						btn.Color = theme.ColorTextPrimary
 						btn.CornerRadius = unit.Dp(8)
-						btn.TextSize = unit.Sp(18)
+						btn.TextSize = unit.Sp(16)
 						btn.Inset = layout.Inset{Top: unit.Dp(2), Bottom: unit.Dp(2), Left: unit.Dp(10), Right: unit.Dp(10)}
 						return btn.Layout(gtx)
 					}),
