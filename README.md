@@ -52,6 +52,29 @@ Plug in your Android phone via USB with USB Debugging enabled:
 
 ---
 
+## 📦 Releases & CI/CD
+
+### Automatic GitHub Release (Recommended)
+Every time a git release tag (e.g., `v0.1.0`) is pushed, GitHub Actions automatically builds and publishes:
+- **`wallet-android-arm64.apk`**: Release APK for Android devices
+- **`wallet-linux-amd64.tar.gz`**: Standalone Linux desktop binary
+- **`wallet-windows-amd64.zip`**: Standalone Windows desktop binary
+
+To trigger a release:
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+### Local Release Build
+Build release desktop archives on your local machine:
+```bash
+./scripts/build-release.sh v0.1.0
+```
+Artifacts are generated in the `dist/` directory.
+
+---
+
 ## 🧪 Testing
 
 Run all unit tests for the SQLite engine, models, and P2P sync server:

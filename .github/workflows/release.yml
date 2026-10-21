@@ -1,0 +1,125 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag name (e.g. v0.1.0)'
+        required: true
+        default: 'v0.1.0'
+
+permissions:
+  contents: write
+
+jobs:
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.x'
+          cache: true
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Android SDK
+        run: |
+          yes | sdkmanager --licenses || true
+          sdkmanager "platforms;android-34" "build-tools;34.0.0"
+
+      - name: Install gogio
+        run: |
+          go install gioui.org/cmd/gogio@latest
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+
+      - name: Build Android APK
+        run: |
+          mkdir -p dist
+          gogio -target android \
+            -arch arm64 \
+            -appid com.shakilnwz.wallet \
+            -minsdk 24 \
+            -targetsdk 34 \
+            -o dist/wallet-android-arm64.apk \
+            ./cmd/wallet
+
+      - name: Upload Android APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wallet-android-arm64
+          path: dist/wallet-android-arm64.apk
+
+  build-desktop:
+    name: Build Desktop Binaries
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.x'
+          cache: true
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libvulkan-dev libwayland-dev libx11-dev libx11-xcb-dev libxkbcommon-dev libxkbcommon-x11-dev
+
+      - name: Build Desktop Binaries
+        run: |
+          mkdir -p dist
+
+          # 1. Linux x86_64
+          CGO_CFLAGS="-I$(pwd)/include" go build -ldflags="-s -w" -o dist/wallet-linux-amd64 ./cmd/wallet
+          tar -czf dist/wallet-linux-amd64.tar.gz -C dist wallet-linux-amd64
+
+          # 2. Windows x86_64
+          GOOS=windows GOARCH=amd64 go build -ldflags="-s -w -H=windowsgui" -o dist/wallet-windows-amd64.exe ./cmd/wallet
+          zip -j -q dist/wallet-windows-amd64.zip dist/wallet-windows-amd64.exe
+
+      - name: Upload Desktop artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: wallet-desktop-binaries
+          path: |
+            dist/wallet-linux-amd64.tar.gz
+            dist/wallet-windows-amd64.zip
+
+  publish-release:
+    name: Publish GitHub Release
+    needs: [build-android, build-desktop]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          merge-multiple: true
+
+      - name: Create GitHub Release & Upload Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release-artifacts/wallet-android-arm64.apk
+            release-artifacts/wallet-linux-amd64.tar.gz
+            release-artifacts/wallet-windows-amd64.zip
+          generate_release_notes: true
+          draft: false
+          prerelease: false

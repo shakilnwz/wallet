@@ -1,5 +1,6 @@
 # Binaries
 bin/
+dist/
 *.exe
 *.exe~
 *.dll
@@ -7,6 +8,8 @@ bin/
 *.dylib
 *.apk
 *.aab
+*.tar.gz
+*.zip
 
 # Test binary, built with `go test -c`
 *.test
