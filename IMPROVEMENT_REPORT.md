@@ -226,12 +226,15 @@ The APK version is hardcoded and doesn't match the git tag. There's no `appicon.
 
 > **Fix:** Extract version from the git tag (`git describe --tags`). Add an `appicon.png` in `cmd/wallet/` for branding.
 
-### 27. APK is debug-signed only — no code signing
+### 27. APK is debug-signed only — no production keystore signing (Pending Task)
 **File:** [`.github/workflows/release.yml`](file:///home/shakilnwz/code/wallet/.github/workflows/release.yml)
 
-The APK produced by `gogio` without `-signkey` uses a debug keystore. Users must enable "Install from unknown sources" and can't update seamlessly (different debug keys per CI run).
+The APK produced by `gogio` without `-signkey` uses a debug keystore. Android accepts debug-signed APKs for personal use and testing, but installing requires "Install from unknown sources" and may conflict across reinstallations.
 
-> **Fix:** Generate a release keystore, store it as a GitHub Actions secret, and pass `-signkey` and `-signpass` to `gogio`.
+> **Task Details:**
+> - Generate a production release keystore via `keytool -genkey -v -keystore wallet.keystore -alias wallet-key -keyalg RSA -keysize 2048 -validity 10000` (no Google Developer Account needed for personal distribution).
+> - Store base64-encoded keystore as a repository secret (`KEYSTORE_BASE64` and `KEYSTORE_PASSWORD`).
+> - Pass `-signkey` and `-signpass` to `gogio` in `.github/workflows/release.yml` and `scripts/build-android.sh`.
 
 ### 28. `install-phone.sh` uses `adb shell monkey` instead of proper intent launch
 **File:** [`scripts/install-phone.sh`](file:///home/shakilnwz/code/wallet/scripts/install-phone.sh#L13)

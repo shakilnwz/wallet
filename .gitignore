@@ -28,6 +28,10 @@ go.work
 *.db-wal
 *.db-shm
 
+# Android keystores
+*.keystore
+*.jks
+
 # OS / Editor files
 .DS_Store
 .idea/
