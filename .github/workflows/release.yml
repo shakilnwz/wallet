@@ -88,7 +88,9 @@ jobs:
             libx11-dev \
             libx11-xcb-dev \
             libxkbcommon-dev \
-            libxkbcommon-x11-dev
+            libxkbcommon-x11-dev \
+            libxcursor-dev \
+            libxfixes-dev
 
       - name: Build Desktop Binaries
         run: |
