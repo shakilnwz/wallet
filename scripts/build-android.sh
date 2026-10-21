@@ -6,9 +6,11 @@ cd "$(dirname "$0")/.."
 
 echo "==> Building Wallet Android APK using gogio..."
 
-# Locate gogio tool (manually installed by user)
+# Locate gogio tool (project-local bin or environment)
 GOGIO_BIN=""
-if command -v gogio >/dev/null 2>&1; then
+if [ -x "./bin/gogio" ]; then
+    GOGIO_BIN="./bin/gogio"
+elif command -v gogio >/dev/null 2>&1; then
     GOGIO_BIN="gogio"
 elif [ -n "$(go env GOBIN 2>/dev/null)" ] && [ -x "$(go env GOBIN)/gogio" ]; then
     GOGIO_BIN="$(go env GOBIN)/gogio"
@@ -19,10 +21,11 @@ elif [ -x "$HOME/go/bin/gogio" ]; then
 fi
 
 if [ -z "$GOGIO_BIN" ]; then
-    echo "Error: 'gogio' tool not found in PATH or ~/go/bin."
-    echo "Please install gogio manually using:"
+    echo "Error: 'gogio' tool not found."
+    echo "Please install gogio either project-locally:"
+    echo "  mkdir -p bin && GOBIN=\$(pwd)/bin go install gioui.org/cmd/gogio@latest"
+    echo "or globally:"
     echo "  go install gioui.org/cmd/gogio@latest"
-    echo "and ensure \$(go env GOPATH)/bin is in your PATH."
     exit 1
 fi
 
