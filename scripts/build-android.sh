@@ -6,12 +6,25 @@ cd "$(dirname "$0")/.."
 
 echo "==> Building Wallet Android APK using gogio..."
 
-# Ensure gogio binary is available
-if [ ! -f "./bin/gogio" ]; then
-    echo "gogio not found in ./bin, installing..."
-    mkdir -p bin
-    GOBIN="$(pwd)/bin" go install gioui.org/cmd/gogio@latest
+# Locate gogio tool (manually installed by user)
+GOGIO_BIN=""
+if command -v gogio >/dev/null 2>&1; then
+    GOGIO_BIN="gogio"
+elif [ -n "$(go env GOPATH 2>/dev/null)" ] && [ -x "$(go env GOPATH)/bin/gogio" ]; then
+    GOGIO_BIN="$(go env GOPATH)/bin/gogio"
+elif [ -x "$HOME/go/bin/gogio" ]; then
+    GOGIO_BIN="$HOME/go/bin/gogio"
 fi
+
+if [ -z "$GOGIO_BIN" ]; then
+    echo "Error: 'gogio' tool not found in PATH or ~/go/bin."
+    echo "Please install gogio manually using:"
+    echo "  go install gioui.org/cmd/gogio@latest"
+    echo "and ensure \$(go env GOPATH)/bin is in your PATH."
+    exit 1
+fi
+
+echo "Using gogio: $GOGIO_BIN"
 
 # Detect ANDROID_HOME if not set
 if [ -z "$ANDROID_HOME" ]; then
@@ -34,7 +47,7 @@ fi
 echo "Using ANDROID_HOME: $ANDROID_HOME"
 
 # Build APK for arm64 (Android 64-bit phones)
-./bin/gogio -target android \
+"$GOGIO_BIN" -target android \
     -arch arm64 \
     -appid com.shakilnwz.wallet \
     -version 1.0.0.1 \
