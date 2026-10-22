@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 
 	"github.com/shakilnwz/wallet/core/models"
@@ -72,6 +73,8 @@ func TestSyncServerClient(t *testing.T) {
 
 	// Start sync server on Device 1
 	server1 := NewServer(db1)
+	var merged atomic.Bool
+	server1.OnMerge = func() { merged.Store(true) }
 	port1, err := server1.Start(0) // Random port
 	if err != nil {
 		t.Fatalf("Start server1 failed: %v", err)
@@ -112,5 +115,8 @@ func TestSyncServerClient(t *testing.T) {
 	}
 	if len(txs2) != 2 {
 		t.Errorf("Expected 2 transactions in db2, got %d", len(txs2))
+	}
+	if !merged.Load() {
+		t.Errorf("Expected OnMerge to fire after the peer pushed records")
 	}
 }

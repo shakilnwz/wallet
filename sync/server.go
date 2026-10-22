@@ -18,6 +18,10 @@ import (
 const apiPrefix = "/sync/v2"
 
 type Server struct {
+	// OnMerge, if set, is called after a peer pushes records into this device.
+	// It runs on the HTTP goroutine; set it before Start.
+	OnMerge func()
+
 	database *db.DB
 	listener net.Listener
 	server   *http.Server
@@ -125,10 +129,31 @@ func (s *Server) handleMerge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if s.OnMerge != nil && ins+upd > 0 {
+		s.OnMerge()
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]any{
 		"inserted": ins,
 		"updated":  upd,
 		"skipped":  skip,
 	})
+}
+
+// LocalIP returns this device's LAN IPv4 address, or "" if offline. It asks
+// the kernel which interface would route to a public address; no packet is
+// sent. Unlike net.InterfaceAddrs this also works on Android 11+, which
+// blocks the netlink calls that function needs.
+func LocalIP() string {
+	conn, err := net.Dial("udp4", "192.0.2.1:9") // TEST-NET-1, never routed
+	if err != nil {
+		return ""
+	}
+	defer conn.Close()
+	addr, ok := conn.LocalAddr().(*net.UDPAddr)
+	if !ok || addr.IP.IsLoopback() {
+		return ""
+	}
+	return addr.IP.String()
 }

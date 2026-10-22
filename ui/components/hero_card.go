@@ -32,6 +32,7 @@ func (h *HeroCard) Layout(gtx layout.Context, th *theme.Theme, summary *models.A
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					// Header row: Net Balance title + Balance Status
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+						gtx.Constraints.Min.X = gtx.Constraints.Max.X
 						return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle, Spacing: layout.SpaceBetween}.Layout(gtx,
 							layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 								caption := material.Caption(th.Theme, fmt.Sprintf("NET BALANCE (%s)", monthLabel))
@@ -68,6 +69,7 @@ func (h *HeroCard) Layout(gtx layout.Context, th *theme.Theme, summary *models.A
 
 					// Income vs Expense Split Row
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+						gtx.Constraints.Min.X = gtx.Constraints.Max.X
 						return layout.Flex{Axis: layout.Horizontal, Spacing: layout.SpaceBetween}.Layout(gtx,
 							// Income Column
 							layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
@@ -123,6 +125,7 @@ func (h *HeroCard) Layout(gtx layout.Context, th *theme.Theme, summary *models.A
 
 					// Account vs Cash Distribution Footer
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+						gtx.Constraints.Min.X = gtx.Constraints.Max.X
 						return layout.Flex{Axis: layout.Horizontal, Spacing: layout.SpaceBetween, Alignment: layout.Middle}.Layout(gtx,
 							layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 								txt := fmt.Sprintf("Bank: %s", theme.FormatCurrency(summary.BankBalance))

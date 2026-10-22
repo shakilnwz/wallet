@@ -2,6 +2,7 @@ package components
 
 import (
 	"fmt"
+	"strings"
 
 	"gioui.org/layout"
 	"gioui.org/unit"
@@ -18,14 +19,25 @@ type SyncView struct {
 	SyncNowBtn     widget.Clickable
 	ToggleServer   widget.Clickable
 	ResetDataBtn   widget.Clickable
+	CancelResetBtn widget.Clickable
 
 	StatusMsg string
+	StatusErr bool
+	Syncing   bool
+
+	confirmReset bool // Delete All was tapped once and awaits confirmation
+}
+
+// SetStatus shows a sync status line, in red when isErr.
+func (s *SyncView) SetStatus(msg string, isErr bool) {
+	s.StatusMsg, s.StatusErr = msg, isErr
 }
 
 func (s *SyncView) Layout(
 	gtx layout.Context,
 	th *theme.Theme,
 	stats models.SyncStats,
+	localIP string,
 	serverRunning bool,
 	serverPort int,
 	onToggleServer func(),
@@ -36,15 +48,27 @@ func (s *SyncView) Layout(
 		onToggleServer()
 	}
 
-	if s.SyncNowBtn.Clicked(gtx) && onSyncWithPeer != nil {
-		addr := s.PeerAddrEditor.Text()
-		if addr != "" {
+	s.PeerAddrEditor.SingleLine = true
+	if s.SyncNowBtn.Clicked(gtx) && onSyncWithPeer != nil && !s.Syncing {
+		addr := strings.TrimSpace(s.PeerAddrEditor.Text())
+		if addr == "" {
+			s.SetStatus("Enter the other device's address first.", true)
+		} else {
 			onSyncWithPeer(addr)
 		}
 	}
 
+	// Delete All needs two taps: it also deletes on every synced device.
 	if s.ResetDataBtn.Clicked(gtx) && onResetData != nil {
-		onResetData()
+		if s.confirmReset {
+			s.confirmReset = false
+			onResetData()
+		} else {
+			s.confirmReset = true
+		}
+	}
+	if s.CancelResetBtn.Clicked(gtx) {
+		s.confirmReset = false
 	}
 
 	s.List.Axis = layout.Vertical
@@ -78,6 +102,7 @@ func (s *SyncView) Layout(
 								layout.Rigid(layout.Spacer{Height: unit.Dp(12)}.Layout),
 								// Stats Grid
 								layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+									gtx.Constraints.Min.X = gtx.Constraints.Max.X
 									return layout.Flex{Axis: layout.Horizontal, Spacing: layout.SpaceBetween}.Layout(gtx,
 										layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
 											return theme.Card(gtx, theme.ColorSurfaceElevated, unit.Dp(8), func(gtx layout.Context) layout.Dimensions {
@@ -155,6 +180,7 @@ func (s *SyncView) Layout(
 						return layout.Inset{Top: unit.Dp(16), Bottom: unit.Dp(16), Left: unit.Dp(16), Right: unit.Dp(16)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 								layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+									gtx.Constraints.Min.X = gtx.Constraints.Max.X
 									return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle, Spacing: layout.SpaceBetween}.Layout(gtx,
 										layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 											title := material.H6(th.Theme, "Local Sync Server")
@@ -166,7 +192,7 @@ func (s *SyncView) Layout(
 											btnText := "Start Server"
 											btnBg := theme.ColorPrimary
 											if serverRunning {
-												btnText = fmt.Sprintf("Stop (: %d)", serverPort)
+												btnText = "Stop Server"
 												btnBg = theme.ColorIncome
 											}
 											btn := material.Button(th.Theme, &s.ToggleServer, btnText)
@@ -181,14 +207,32 @@ func (s *SyncView) Layout(
 								}),
 								layout.Rigid(layout.Spacer{Height: unit.Dp(8)}.Layout),
 								layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-									txt := "Start the local sync server to allow other devices on your Wi-Fi/LAN to discover and merge records with this device."
-									if serverRunning {
-										txt = fmt.Sprintf("Server running on port %d. Other devices can sync by entering this device's local IP and port.", serverPort)
+									txt := "Start the server so other devices on the same Wi-Fi can sync with this one."
+									if serverRunning && localIP == "" {
+										txt = fmt.Sprintf("Running on port %d, but this device doesn't seem to be on a network.", serverPort)
+									} else if serverRunning {
+										txt = "On the other device, enter this address and tap Sync:"
 									}
 									desc := material.Caption(th.Theme, txt)
 									desc.Color = theme.ColorTextMuted
 									desc.TextSize = unit.Sp(11)
 									return desc.Layout(gtx)
+								}),
+								layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+									if !serverRunning || localIP == "" {
+										return layout.Dimensions{}
+									}
+									return layout.Inset{Top: unit.Dp(8)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+										return theme.Card(gtx, theme.ColorSurfaceElevated, unit.Dp(10), func(gtx layout.Context) layout.Dimensions {
+											return layout.Inset{Top: unit.Dp(10), Bottom: unit.Dp(10), Left: unit.Dp(12), Right: unit.Dp(12)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+												gtx.Constraints.Min.X = gtx.Constraints.Max.X
+												lbl := material.H6(th.Theme, fmt.Sprintf("%s:%d", localIP, serverPort))
+												lbl.Color = theme.ColorPrimary
+												lbl.TextSize = unit.Sp(18)
+												return lbl.Layout(gtx)
+											})
+										})
+									})
 								}),
 							)
 						})
@@ -212,6 +256,7 @@ func (s *SyncView) Layout(
 								layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 									return theme.Card(gtx, theme.ColorSurfaceElevated, unit.Dp(10), func(gtx layout.Context) layout.Dimensions {
 										return layout.Inset{Top: unit.Dp(10), Bottom: unit.Dp(10), Left: unit.Dp(12), Right: unit.Dp(12)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+											gtx.Constraints.Min.X = gtx.Constraints.Max.X
 											ed := material.Editor(th.Theme, &s.PeerAddrEditor, "e.g. 192.168.1.100:8080")
 											ed.Color = theme.ColorTextPrimary
 											ed.TextSize = unit.Sp(13)
@@ -221,8 +266,13 @@ func (s *SyncView) Layout(
 								}),
 								layout.Rigid(layout.Spacer{Height: unit.Dp(10)}.Layout),
 								layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-									btn := material.Button(th.Theme, &s.SyncNowBtn, "Two-Way Sync Now")
-									btn.Background = theme.ColorPrimary
+									label, bg := "Two-Way Sync Now", theme.ColorPrimary
+									if s.Syncing {
+										label, bg = "Syncing...", theme.ColorSurfaceElevated
+									}
+									gtx.Constraints.Min.X = gtx.Constraints.Max.X
+									btn := material.Button(th.Theme, &s.SyncNowBtn, label)
+									btn.Background = bg
 									btn.Color = theme.ColorTextPrimary
 									btn.CornerRadius = unit.Dp(10)
 									btn.TextSize = unit.Sp(13)
@@ -236,6 +286,11 @@ func (s *SyncView) Layout(
 									}
 									status := material.Caption(th.Theme, s.StatusMsg)
 									status.Color = theme.ColorIncome
+									if s.StatusErr {
+										status.Color = theme.ColorExpense
+									} else if s.Syncing {
+										status.Color = theme.ColorTextMuted
+									}
 									status.TextSize = unit.Sp(11)
 									return status.Layout(gtx)
 								}),
@@ -251,6 +306,7 @@ func (s *SyncView) Layout(
 						return layout.Inset{Top: unit.Dp(16), Bottom: unit.Dp(16), Left: unit.Dp(16), Right: unit.Dp(16)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 								layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+									gtx.Constraints.Min.X = gtx.Constraints.Max.X
 									return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle, Spacing: layout.SpaceBetween}.Layout(gtx,
 										layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 											title := material.H6(th.Theme, "Delete All Transactions")
@@ -259,22 +315,42 @@ func (s *SyncView) Layout(
 											return title.Layout(gtx)
 										}),
 										layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-											btn := material.Button(th.Theme, &s.ResetDataBtn, "Delete All")
-											btn.Background = theme.ColorExpense
-											btn.Color = theme.ColorTextPrimary
-											btn.CornerRadius = unit.Dp(8)
-											btn.TextSize = unit.Sp(11)
-											btn.Inset = layout.Inset{Top: unit.Dp(6), Bottom: unit.Dp(6), Left: unit.Dp(10), Right: unit.Dp(10)}
-											return btn.Layout(gtx)
+											if s.confirmReset {
+												return layout.Dimensions{}
+											}
+											return pill(gtx, th, &s.ResetDataBtn, "Delete All", true, theme.ColorExpense, unit.Sp(11))
 										}),
 									)
 								}),
 								layout.Rigid(layout.Spacer{Height: unit.Dp(6)}.Layout),
 								layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-									d := material.Caption(th.Theme, "Deletes every transaction here, and on paired devices at their next sync.")
+									txt := "Deletes every transaction here, and on paired devices at their next sync."
+									if s.confirmReset {
+										txt = fmt.Sprintf("Delete all %d transactions? They'll also be deleted on every device you sync with.", stats.ActiveRecords)
+									}
+									d := material.Caption(th.Theme, txt)
 									d.Color = theme.ColorTextMuted
+									if s.confirmReset {
+										d.Color = theme.ColorTextPrimary
+									}
 									d.TextSize = unit.Sp(11)
 									return d.Layout(gtx)
+								}),
+								layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+									if !s.confirmReset {
+										return layout.Dimensions{}
+									}
+									return layout.Inset{Top: unit.Dp(10)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+										return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+											layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
+												return segment(gtx, th, &s.CancelResetBtn, "Cancel", false, theme.ColorSurfaceElevated)
+											}),
+											layout.Rigid(layout.Spacer{Width: unit.Dp(8)}.Layout),
+											layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
+												return segment(gtx, th, &s.ResetDataBtn, "Delete Everything", true, theme.ColorExpense)
+											}),
+										)
+									})
 								}),
 							)
 						})
