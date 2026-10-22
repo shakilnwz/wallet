@@ -51,15 +51,36 @@ fi
 
 echo "Using ANDROID_HOME: $ANDROID_HOME"
 
+OUT="${1:-wallet.apk}"
+
+# Version from the latest tag: v1.2.3 -> 1.2.3, versionCode 10203 (matches CI).
+TAG="$(git describe --tags --abbrev=0 2>/dev/null || echo v0.0.0)"
+VERSION="${TAG#v}"
+IFS=. read -r MAJOR MINOR PATCH <<< "$VERSION"
+CODE=$(( MAJOR * 10000 + MINOR * 100 + PATCH ))
+
+# Sign with the release key when available so local builds install over
+# GitHub releases (and vice versa). Override with WALLET_KEYSTORE/_PASS_FILE.
+KEYSTORE="${WALLET_KEYSTORE:-$HOME/.local/share/wallet-signing/wallet-release.p12}"
+PASS_FILE="${WALLET_KEYSTORE_PASS_FILE:-$HOME/.local/share/wallet-signing/wallet-release.pass}"
+SIGN_ARGS=()
+if [ -f "$KEYSTORE" ] && [ -f "$PASS_FILE" ]; then
+    echo "Signing with release key: $KEYSTORE"
+    SIGN_ARGS=(-signkey "$KEYSTORE" -signpass "$(cat "$PASS_FILE")")
+else
+    echo "Warning: release keystore not found; using a debug key. This APK won't install over release builds."
+fi
+
 # Build APK for arm64 (Android 64-bit phones)
 "$GOGIO_BIN" -target android \
     -arch arm64 \
     -appid com.shakilnwz.wallet \
-    -version 1.0.0.1 \
+    -version "$VERSION.$CODE" \
     -minsdk 24 \
     -targetsdk 34 \
-    -o wallet.apk \
+    "${SIGN_ARGS[@]}" \
+    -o "$OUT" \
     ./cmd/wallet
 
-echo "✓ Successfully built wallet.apk!"
-ls -lh wallet.apk
+echo "✓ Successfully built $OUT ($VERSION, versionCode $CODE)"
+ls -lh "$OUT"

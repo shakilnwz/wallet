@@ -13,6 +13,7 @@ fi
 echo "==> Building Wallet release artifacts ($VERSION)..."
 
 DIST_DIR="$(pwd)/dist"
+[ -n "$DIST_DIR" ] || exit 1
 mkdir -p "$DIST_DIR"
 rm -f "$DIST_DIR"/*
 
@@ -26,28 +27,10 @@ echo "--> Building Windows Desktop (x86_64)..."
 GOOS=windows GOARCH=amd64 go build -ldflags="-s -w -H=windowsgui" -o "$DIST_DIR/wallet-windows-amd64.exe" ./cmd/wallet
 zip -j -q "$DIST_DIR/wallet-windows-amd64.zip" "$DIST_DIR/wallet-windows-amd64.exe"
 
-# 3. Build Android APK (if ANDROID_HOME is set)
-GOGIO_BIN=""
-if [ -x "./bin/gogio" ]; then
-    GOGIO_BIN="./bin/gogio"
-elif command -v gogio >/dev/null 2>&1; then
-    GOGIO_BIN="gogio"
-elif [ -n "$(go env GOBIN 2>/dev/null)" ] && [ -x "$(go env GOBIN)/gogio" ]; then
-    GOGIO_BIN="$(go env GOBIN)/gogio"
-elif [ -n "$(go env GOPATH 2>/dev/null)" ] && [ -x "$(go env GOPATH)/bin/gogio" ]; then
-    GOGIO_BIN="$(go env GOPATH)/bin/gogio"
-fi
-
-if [ -n "$ANDROID_HOME" ] && [ -n "$GOGIO_BIN" ]; then
+# 3. Build Android APK (if the Android toolchain is available)
+if [ -n "$ANDROID_HOME" ]; then
     echo "--> Building Android APK (arm64)..."
-    "$GOGIO_BIN" -target android \
-        -arch arm64 \
-        -appid com.shakilnwz.wallet \
-        -version 1.0.0.1 \
-        -minsdk 24 \
-        -targetsdk 34 \
-        -o "$DIST_DIR/wallet-android-arm64.apk" \
-        ./cmd/wallet
+    ./scripts/build-android.sh "$DIST_DIR/wallet-android-arm64.apk"
 else
     echo "--> Skipping local Android build (ANDROID_HOME not set; will be built by GitHub Actions on release tag)."
 fi

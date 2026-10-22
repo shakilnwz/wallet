@@ -14,9 +14,13 @@ on:
 permissions:
   contents: write
 
+env:
+  GOGIO_VERSION: v0.10.3
+  RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
+
 jobs:
-  build-android:
-    name: Build Android APK
+  test:
+    name: Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -25,7 +29,43 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24.x'
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libegl1-mesa-dev \
+            libgl1-mesa-dev \
+            libvulkan-dev \
+            libwayland-dev \
+            libx11-dev \
+            libx11-xcb-dev \
+            libxkbcommon-dev \
+            libxkbcommon-x11-dev \
+            libxcursor-dev \
+            libxfixes-dev
+
+      - name: Vet and test
+        env:
+          CGO_CFLAGS: -I${{ github.workspace }}/include
+        run: |
+          go vet ./...
+          go test -race ./...
+
+  build-android:
+    name: Build Android APK
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
           cache: true
 
       - name: Set up JDK 17
@@ -44,19 +84,43 @@ jobs:
 
       - name: Install gogio
         run: |
-          go install gioui.org/cmd/gogio@latest
+          go install gioui.org/cmd/gogio@${GOGIO_VERSION}
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
-      - name: Build Android APK
+      - name: Decode release keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "::error::ANDROID_KEYSTORE_BASE64 secret is not set; refusing to publish a debug-signed APK"
+            exit 1
+          fi
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.p12"
+
+      - name: Build Android APK
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          # v1.2.3 -> versionName 1.2.3, versionCode 10203 (must only ever increase).
+          VERSION="${RELEASE_TAG#v}"
+          IFS=. read -r MAJOR MINOR PATCH <<< "$VERSION"
+          CODE=$(( MAJOR * 10000 + MINOR * 100 + PATCH ))
+          echo "Building $VERSION (versionCode $CODE)"
+
           mkdir -p dist
-          $(go env GOPATH)/bin/gogio -target android \
+          gogio -target android \
             -arch arm64 \
             -appid com.shakilnwz.wallet \
+            -version "$VERSION.$CODE" \
             -minsdk 24 \
             -targetsdk 34 \
+            -signkey "$RUNNER_TEMP/release.p12" \
+            -signpass "$ANDROID_KEYSTORE_PASSWORD" \
             -o dist/wallet-android-arm64.apk \
             ./cmd/wallet
+          rm -f "$RUNNER_TEMP/release.p12"
+
+          "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --print-certs dist/wallet-android-arm64.apk
 
       - name: Upload Android APK artifact
         uses: actions/upload-artifact@v4
@@ -66,6 +130,7 @@ jobs:
 
   build-desktop:
     name: Build Desktop Binaries
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -74,7 +139,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24.x'
+          go-version-file: go.mod
           cache: true
 
       - name: Install Linux build dependencies
@@ -129,6 +194,7 @@ jobs:
       - name: Create GitHub Release & Upload Assets
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ env.RELEASE_TAG }}
           files: |
             release-artifacts/wallet-android-arm64.apk
             release-artifacts/wallet-linux-amd64.tar.gz
