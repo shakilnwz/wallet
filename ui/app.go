@@ -91,6 +91,11 @@ func (a *App) ReloadData() {
 	a.MonthlySummary = monSummary
 }
 
+// Shutdown stops background services. Call it before closing the database.
+func (a *App) Shutdown() {
+	_ = a.SyncServer.Stop()
+}
+
 func (a *App) Layout(gtx layout.Context) layout.Dimensions {
 	// 1. Fill Background with OLED Black
 	paint.Fill(gtx.Ops, theme.ColorBackground)
@@ -168,9 +173,13 @@ func (a *App) Layout(gtx layout.Context) layout.Dimensions {
 							a.ReloadData()
 						}
 					},
-					func() { // Reset Data
-						_ = a.Database.ClearAllData()
-						a.SyncView.StatusMsg = "Local transactions wiped."
+					func() { // Delete all transactions (propagates to peers on sync)
+						n, err := a.Database.ClearAllData()
+						if err != nil {
+							a.SyncView.StatusMsg = fmt.Sprintf("Delete failed: %v", err)
+						} else {
+							a.SyncView.StatusMsg = fmt.Sprintf("Deleted %d transactions. Peers will delete them at next sync.", n)
+						}
 						a.ReloadData()
 					},
 				)

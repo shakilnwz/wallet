@@ -2,7 +2,6 @@ package components
 
 import (
 	"fmt"
-	"strconv"
 	"time"
 
 	"gioui.org/layout"
@@ -10,6 +9,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 	"github.com/shakilnwz/wallet/core/models"
+	"github.com/shakilnwz/wallet/core/money"
 	"github.com/shakilnwz/wallet/ui/theme"
 )
 
@@ -129,8 +129,8 @@ func (s *QuickAddSheet) Layout(
 
 	// Submit handling
 	if s.SubmitBtn.Clicked(gtx) {
-		amt, _ := strconv.ParseFloat(s.AmountStr, 64)
-		if amt > 0 {
+		amt, err := money.Parse(s.AmountStr)
+		if err == nil && amt > 0 {
 			benf := s.BenfEditor.Text()
 			if benf == "" {
 				benf = s.Category

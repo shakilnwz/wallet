@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"image"
 	"image/color"
-	"math"
 	"strings"
 	"time"
 
@@ -60,18 +59,15 @@ func NewTheme() *Theme {
 	return &Theme{Theme: th}
 }
 
-func FormatCurrency(amount float64) string {
+// FormatCurrency renders an amount in paisa as BDT, e.g. 1234550 -> ৳12,345.50.
+func FormatCurrency(paisa int64) string {
 	sign := ""
-	if amount < 0 {
+	if paisa < 0 {
 		sign = "-"
-		amount = -amount
+		paisa = -paisa
 	}
-	intPart := int64(amount)
-	decPart := int64(math.Round((amount - float64(intPart)) * 100))
-	if decPart >= 100 {
-		intPart++
-		decPart = 0
-	}
+	intPart := paisa / 100
+	decPart := paisa % 100
 
 	str := fmt.Sprintf("%d", intPart)
 	// Indian / Bangladeshi comma formatting (e.g. 1,00,000)

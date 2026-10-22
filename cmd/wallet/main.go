@@ -17,7 +17,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to initialize SQLite database: %v", err)
 	}
-	defer database.Close()
 
 	// Initialize UI application
 	walletUI := ui.NewApp(database)
@@ -31,8 +30,16 @@ func main() {
 			app.MinSize(unit.Dp(320), unit.Dp(568)),
 		)
 
-		if err := runEventLoop(w, walletUI); err != nil {
-			log.Fatalf("Window event loop error: %v", err)
+		loopErr := runEventLoop(w, walletUI)
+
+		// app.Main never returns (on Android too), so deferred calls in main
+		// would never run: shut down explicitly before exiting.
+		walletUI.Shutdown()
+		if err := database.Close(); err != nil {
+			log.Printf("Failed to close database: %v", err)
+		}
+		if loopErr != nil {
+			log.Fatalf("Window event loop error: %v", loopErr)
 		}
 		os.Exit(0)
 	}()

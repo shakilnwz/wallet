@@ -253,13 +253,13 @@ func (s *SyncView) Layout(
 								layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 									return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle, Spacing: layout.SpaceBetween}.Layout(gtx,
 										layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-											title := material.H6(th.Theme, "Reset Database")
+											title := material.H6(th.Theme, "Delete All Transactions")
 											title.Color = theme.ColorExpense
 											title.TextSize = unit.Sp(14)
 											return title.Layout(gtx)
 										}),
 										layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-											btn := material.Button(th.Theme, &s.ResetDataBtn, "Clear Data")
+											btn := material.Button(th.Theme, &s.ResetDataBtn, "Delete All")
 											btn.Background = theme.ColorExpense
 											btn.Color = theme.ColorTextPrimary
 											btn.CornerRadius = unit.Dp(8)
@@ -271,7 +271,7 @@ func (s *SyncView) Layout(
 								}),
 								layout.Rigid(layout.Spacer{Height: unit.Dp(6)}.Layout),
 								layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-									d := material.Caption(th.Theme, "Wipes all local transactions from this device.")
+									d := material.Caption(th.Theme, "Deletes every transaction here, and on paired devices at their next sync.")
 									d.Color = theme.ColorTextMuted
 									d.TextSize = unit.Sp(11)
 									return d.Layout(gtx)

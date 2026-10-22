@@ -1,13 +1,33 @@
 package sync
 
 import (
+	"errors"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"path/filepath"
 	"testing"
 
 	"github.com/shakilnwz/wallet/core/models"
 	"github.com/shakilnwz/wallet/db"
 )
+
+func TestSyncWithOutdatedPeer(t *testing.T) {
+	// An old build only serves /sync/*, so every /sync/v2 path 404s.
+	old := httptest.NewServer(http.NotFoundHandler())
+	defer old.Close()
+
+	database, err := db.Open(filepath.Join(t.TempDir(), "d.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer database.Close()
+
+	_, _, _, _, err = NewClient().FullTwoWaySync(old.URL, database)
+	if !errors.Is(err, errPeerOutdated) {
+		t.Fatalf("got %v, want errPeerOutdated", err)
+	}
+}
 
 func TestSyncServerClient(t *testing.T) {
 	tempDir := t.TempDir()
@@ -24,7 +44,7 @@ func TestSyncServerClient(t *testing.T) {
 		Type:    models.TypeIncome,
 		Benf:    "Freelance Project",
 		ExpCat:  "Freelance",
-		Amount:  40000.0,
+		Amount:  40000_00,
 		Account: models.AccountBank,
 	})
 	if err != nil {
@@ -43,7 +63,7 @@ func TestSyncServerClient(t *testing.T) {
 		Type:    models.TypeExpense,
 		Benf:    "Coffee",
 		ExpCat:  "Food & Dining",
-		Amount:  250.0,
+		Amount:  250_00,
 		Account: models.AccountCash,
 	})
 	if err != nil {

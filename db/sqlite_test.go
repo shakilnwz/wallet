@@ -28,7 +28,7 @@ func TestSQLiteDB(t *testing.T) {
 		Type:    models.TypeIncome,
 		Benf:    "Salary",
 		ExpCat:  "Salary",
-		Amount:  50000.0,
+		Amount:  50000_00,
 		Account: models.AccountBank,
 		Notes:   "October salary",
 	})
@@ -45,7 +45,7 @@ func TestSQLiteDB(t *testing.T) {
 		Type:    models.TypeExpense,
 		Benf:    "Rent",
 		ExpCat:  "Housing",
-		Amount:  15000.0,
+		Amount:  15000_00,
 		Account: models.AccountBank,
 	})
 	if err != nil {
@@ -58,7 +58,7 @@ func TestSQLiteDB(t *testing.T) {
 		Type:    models.TypeExpense,
 		Benf:    "Grocery",
 		ExpCat:  "Food",
-		Amount:  5000.0,
+		Amount:  5000_00,
 		Account: models.AccountCash,
 	})
 	if err != nil {
@@ -71,23 +71,23 @@ func TestSQLiteDB(t *testing.T) {
 		t.Fatalf("GetAccountSummary failed: %v", err)
 	}
 
-	if summary.TotalIncome != 50000.0 {
-		t.Errorf("Expected TotalIncome 50000.0, got %f", summary.TotalIncome)
+	if summary.TotalIncome != 50000_00 {
+		t.Errorf("Expected TotalIncome 5000000, got %d", summary.TotalIncome)
 	}
-	if summary.TotalExpense != 20000.0 {
-		t.Errorf("Expected TotalExpense 20000.0, got %f", summary.TotalExpense)
+	if summary.TotalExpense != 20000_00 {
+		t.Errorf("Expected TotalExpense 2000000, got %d", summary.TotalExpense)
 	}
-	if summary.TotalBalance != 30000.0 {
-		t.Errorf("Expected TotalBalance 30000.0, got %f", summary.TotalBalance)
+	if summary.TotalBalance != 30000_00 {
+		t.Errorf("Expected TotalBalance 3000000, got %d", summary.TotalBalance)
 	}
-	if summary.BankBalance != 35000.0 {
-		t.Errorf("Expected BankBalance 35000.0, got %f", summary.BankBalance)
+	if summary.BankBalance != 35000_00 {
+		t.Errorf("Expected BankBalance 3500000, got %d", summary.BankBalance)
 	}
-	if summary.CashBalance != -5000.0 {
-		t.Errorf("Expected CashBalance -5000.0, got %f", summary.CashBalance)
+	if summary.CashBalance != -5000_00 {
+		t.Errorf("Expected CashBalance -500000, got %d", summary.CashBalance)
 	}
 	if !summary.IsBalanced {
-		t.Errorf("Expected IsBalanced true, got false (diff=%f)", summary.NeedBalancing)
+		t.Errorf("Expected IsBalanced true, got false (diff=%d)", summary.NeedBalancing)
 	}
 
 	// 5. Soft Delete
@@ -100,8 +100,8 @@ func TestSQLiteDB(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetAccountSummary after delete failed: %v", err)
 	}
-	if afterDelete.TotalExpense != 15000.0 {
-		t.Errorf("Expected TotalExpense 15000.0 after soft delete, got %f", afterDelete.TotalExpense)
+	if afterDelete.TotalExpense != 15000_00 {
+		t.Errorf("Expected TotalExpense 1500000 after soft delete, got %d", afterDelete.TotalExpense)
 	}
 
 	// 6. Test Sync LWW
@@ -150,7 +150,7 @@ func TestSQLiteDB(t *testing.T) {
 				Type:      models.TypeIncome,
 				Benf:      "Salary (Bonus Included)",
 				ExpCat:    "Salary",
-				Amount:    55000.0,
+				Amount:    55000_00,
 				Account:   models.AccountBank,
 				Notes:     "Updated October salary",
 				CreatedAt: inc.CreatedAt,
@@ -176,7 +176,7 @@ func TestSQLiteDB(t *testing.T) {
 	}
 	var foundUpdated bool
 	for _, tx := range txs {
-		if tx.ID == inc.ID && tx.Amount == 55000.0 && tx.Benf == "Salary (Bonus Included)" {
+		if tx.ID == inc.ID && tx.Amount == 55000_00 && tx.Benf == "Salary (Bonus Included)" {
 			foundUpdated = true
 			break
 		}
