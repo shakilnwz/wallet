@@ -2,6 +2,7 @@ package components
 
 import (
 	"gioui.org/layout"
+	"gioui.org/op"
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
@@ -21,6 +22,8 @@ func (m *MonthSelector) Layout(
 	availableMonths []string,
 	onSelectMonth func(string),
 ) layout.Dimensions {
+	changed := false
+
 	if m.PrevBtn.Clicked(gtx) && len(availableMonths) > 0 {
 		idx := -1
 		for i, v := range availableMonths {
@@ -30,7 +33,10 @@ func (m *MonthSelector) Layout(
 			}
 		}
 		if idx != -1 && idx < len(availableMonths)-1 {
-			onSelectMonth(availableMonths[idx+1])
+			if onSelectMonth != nil {
+				onSelectMonth(availableMonths[idx+1])
+				changed = true
+			}
 		}
 	}
 
@@ -43,67 +49,87 @@ func (m *MonthSelector) Layout(
 			}
 		}
 		if idx > 0 {
-			onSelectMonth(availableMonths[idx-1])
+			if onSelectMonth != nil {
+				onSelectMonth(availableMonths[idx-1])
+				changed = true
+			}
 		}
 	}
 
 	if m.ToggleBtn.Clicked(gtx) {
 		if selectedMonth == "all" {
 			if len(availableMonths) > 0 {
-				onSelectMonth(availableMonths[0])
+				if onSelectMonth != nil {
+					onSelectMonth(availableMonths[0])
+					changed = true
+				}
 			}
 		} else {
-			onSelectMonth("all")
+			if onSelectMonth != nil {
+				onSelectMonth("all")
+				changed = true
+			}
 		}
 	}
+
+	if changed {
+		gtx.Execute(op.InvalidateCmd{})
+	}
+
+	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 
 	return layout.Inset{
 		Left:   unit.Dp(16),
 		Right:  unit.Dp(16),
 		Bottom: unit.Dp(12),
 	}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		return theme.Card(gtx, theme.ColorSurface, unit.Dp(14), func(gtx layout.Context) layout.Dimensions {
 			return layout.Inset{
-				Top:    unit.Dp(6),
-				Bottom: unit.Dp(6),
-				Left:   unit.Dp(8),
-				Right:  unit.Dp(8),
+				Top:    unit.Dp(4),
+				Bottom: unit.Dp(4),
+				Left:   unit.Dp(6),
+				Right:  unit.Dp(6),
 			}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+				gtx.Constraints.Min.X = gtx.Constraints.Max.X
 				return layout.Flex{
 					Axis:      layout.Horizontal,
 					Alignment: layout.Middle,
 					Spacing:   layout.SpaceBetween,
 				}.Layout(gtx,
-					// Prev button
+					// Prev button (Touch-friendly hit area)
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-						btn := material.Button(th.Theme, &m.PrevBtn, "<")
+						btn := material.Button(th.Theme, &m.PrevBtn, "◀")
 						btn.Background = theme.ColorSurfaceElevated
 						btn.Color = theme.ColorTextPrimary
-						btn.CornerRadius = unit.Dp(8)
-						btn.TextSize = unit.Sp(16)
-						btn.Inset = layout.Inset{Top: unit.Dp(2), Bottom: unit.Dp(2), Left: unit.Dp(10), Right: unit.Dp(10)}
+						btn.CornerRadius = unit.Dp(10)
+						btn.TextSize = unit.Sp(12)
+						btn.Inset = layout.Inset{Top: unit.Dp(8), Bottom: unit.Dp(8), Left: unit.Dp(14), Right: unit.Dp(14)}
 						return btn.Layout(gtx)
 					}),
 
-					// Center Month label
-					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-						btn := material.Clickable(gtx, &m.ToggleBtn, func(gtx layout.Context) layout.Dimensions {
-							lbl := material.Body1(th.Theme, theme.FormatMonthDisplay(selectedMonth))
-							lbl.Color = theme.ColorTextPrimary
-							lbl.TextSize = unit.Sp(14)
-							return lbl.Layout(gtx)
+					// Center Month label (Tap to toggle All Time)
+					layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
+						return layout.Center.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+							return material.Clickable(gtx, &m.ToggleBtn, func(gtx layout.Context) layout.Dimensions {
+								return layout.Inset{Top: unit.Dp(8), Bottom: unit.Dp(8), Left: unit.Dp(12), Right: unit.Dp(12)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+									lbl := material.Body1(th.Theme, theme.FormatMonthDisplay(selectedMonth))
+									lbl.Color = theme.ColorTextPrimary
+									lbl.TextSize = unit.Sp(14)
+									return lbl.Layout(gtx)
+								})
+							})
 						})
-						return btn
 					}),
 
-					// Next button
+					// Next button (Touch-friendly hit area)
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-						btn := material.Button(th.Theme, &m.NextBtn, ">")
+						btn := material.Button(th.Theme, &m.NextBtn, "▶")
 						btn.Background = theme.ColorSurfaceElevated
 						btn.Color = theme.ColorTextPrimary
-						btn.CornerRadius = unit.Dp(8)
-						btn.TextSize = unit.Sp(16)
-						btn.Inset = layout.Inset{Top: unit.Dp(2), Bottom: unit.Dp(2), Left: unit.Dp(10), Right: unit.Dp(10)}
+						btn.CornerRadius = unit.Dp(10)
+						btn.TextSize = unit.Sp(12)
+						btn.Inset = layout.Inset{Top: unit.Dp(8), Bottom: unit.Dp(8), Left: unit.Dp(14), Right: unit.Dp(14)}
 						return btn.Layout(gtx)
 					}),
 				)

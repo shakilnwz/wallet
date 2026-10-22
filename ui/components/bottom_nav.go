@@ -2,6 +2,7 @@ package components
 
 import (
 	"gioui.org/layout"
+	"gioui.org/op"
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
@@ -15,13 +16,14 @@ const (
 	TabLedger
 	TabInsights
 	TabSync
+	TabSettings
 )
 
 type BottomNav struct {
 	HomeBtn     widget.Clickable
 	LedgerBtn   widget.Clickable
 	InsightsBtn widget.Clickable
-	SyncBtn     widget.Clickable
+	DrawerBtn   widget.Clickable
 	AddBtn      widget.Clickable
 }
 
@@ -31,35 +33,51 @@ func (b *BottomNav) Layout(
 	currentTab Tab,
 	onSelectTab func(Tab),
 	onOpenAdd func(),
+	onToggleDrawer func(),
 ) layout.Dimensions {
-	if b.HomeBtn.Clicked(gtx) {
+	// Process click events immediately
+	changed := false
+	if b.HomeBtn.Clicked(gtx) && onSelectTab != nil {
 		onSelectTab(TabHome)
+		changed = true
 	}
-	if b.LedgerBtn.Clicked(gtx) {
+	if b.LedgerBtn.Clicked(gtx) && onSelectTab != nil {
 		onSelectTab(TabLedger)
+		changed = true
 	}
-	if b.InsightsBtn.Clicked(gtx) {
+	if b.InsightsBtn.Clicked(gtx) && onSelectTab != nil {
 		onSelectTab(TabInsights)
+		changed = true
 	}
-	if b.SyncBtn.Clicked(gtx) {
-		onSelectTab(TabSync)
+	if b.DrawerBtn.Clicked(gtx) && onToggleDrawer != nil {
+		onToggleDrawer()
+		changed = true
 	}
-	if b.AddBtn.Clicked(gtx) {
+	if b.AddBtn.Clicked(gtx) && onOpenAdd != nil {
 		onOpenAdd()
+		changed = true
 	}
 
+	if changed {
+		gtx.Execute(op.InvalidateCmd{})
+	}
+
+	gtx.Constraints.Min.X = gtx.Constraints.Max.X
+
 	return layout.Inset{
-		Bottom: unit.Dp(8),
+		Bottom: unit.Dp(12),
 		Left:   unit.Dp(16),
 		Right:  unit.Dp(16),
 	}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		return theme.Card(gtx, theme.ColorSurface, unit.Dp(24), func(gtx layout.Context) layout.Dimensions {
 			return layout.Inset{
-				Top:    unit.Dp(8),
-				Bottom: unit.Dp(8),
-				Left:   unit.Dp(12),
-				Right:  unit.Dp(12),
+				Top:    unit.Dp(6),
+				Bottom: unit.Dp(6),
+				Left:   unit.Dp(10),
+				Right:  unit.Dp(10),
 			}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+				gtx.Constraints.Min.X = gtx.Constraints.Max.X
 				return layout.Flex{
 					Axis:      layout.Horizontal,
 					Alignment: layout.Middle,
@@ -75,15 +93,17 @@ func (b *BottomNav) Layout(
 						return b.layoutTabBtn(gtx, th, &b.LedgerBtn, "Ledger", currentTab == TabLedger)
 					}),
 
-					// Center Prominent Add (+) Button
+					// Center Prominent Add (+) Button (Large touch target)
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-						btn := material.Button(th.Theme, &b.AddBtn, "+")
-						btn.Background = theme.ColorPrimary
-						btn.Color = theme.ColorTextPrimary
-						btn.CornerRadius = unit.Dp(22)
-						btn.TextSize = unit.Sp(22)
-						btn.Inset = layout.Inset{Top: unit.Dp(8), Bottom: unit.Dp(8), Left: unit.Dp(18), Right: unit.Dp(18)}
-						return btn.Layout(gtx)
+						return layout.Inset{Left: unit.Dp(6), Right: unit.Dp(6)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+							btn := material.Button(th.Theme, &b.AddBtn, "+")
+							btn.Background = theme.ColorPrimary
+							btn.Color = theme.ColorTextPrimary
+							btn.CornerRadius = unit.Dp(16)
+							btn.TextSize = unit.Sp(22)
+							btn.Inset = layout.Inset{Top: unit.Dp(8), Bottom: unit.Dp(8), Left: unit.Dp(20), Right: unit.Dp(20)}
+							return btn.Layout(gtx)
+						})
 					}),
 
 					// Insights tab
@@ -91,9 +111,9 @@ func (b *BottomNav) Layout(
 						return b.layoutTabBtn(gtx, th, &b.InsightsBtn, "Insights", currentTab == TabInsights)
 					}),
 
-					// Sync tab
+					// More / Drawer button
 					layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
-						return b.layoutTabBtn(gtx, th, &b.SyncBtn, "Sync", currentTab == TabSync)
+						return b.layoutTabBtn(gtx, th, &b.DrawerBtn, "Menu ☰", currentTab == TabSync || currentTab == TabSettings)
 					}),
 				)
 			})
@@ -105,7 +125,7 @@ func (b *BottomNav) layoutTabBtn(gtx layout.Context, th *theme.Theme, click *wid
 	col := theme.ColorTextMuted
 	bg := theme.ColorSurface
 	if isActive {
-		col = theme.ColorPrimary
+		col = theme.ColorTextPrimary
 		bg = theme.ColorSurfaceElevated
 	}
 
@@ -113,7 +133,7 @@ func (b *BottomNav) layoutTabBtn(gtx layout.Context, th *theme.Theme, click *wid
 	btn.Background = bg
 	btn.Color = col
 	btn.CornerRadius = unit.Dp(12)
-	btn.TextSize = unit.Sp(11)
-	btn.Inset = layout.Inset{Top: unit.Dp(8), Bottom: unit.Dp(8), Left: unit.Dp(4), Right: unit.Dp(4)}
+	btn.TextSize = unit.Sp(12)
+	btn.Inset = layout.Inset{Top: unit.Dp(10), Bottom: unit.Dp(10), Left: unit.Dp(4), Right: unit.Dp(4)}
 	return btn.Layout(gtx)
 }

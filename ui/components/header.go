@@ -2,6 +2,7 @@ package components
 
 import (
 	"gioui.org/layout"
+	"gioui.org/op"
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
@@ -9,78 +10,120 @@ import (
 )
 
 type Header struct {
+	MenuBtn    widget.Clickable
 	RefreshBtn widget.Clickable
-	SyncBtn    widget.Clickable
+	ActionBtn  widget.Clickable
 }
 
-func (h *Header) Layout(gtx layout.Context, th *theme.Theme, onRefresh func(), onOpenSync func()) layout.Dimensions {
+func (h *Header) Layout(
+	gtx layout.Context,
+	th *theme.Theme,
+	title string,
+	subtitle string,
+	actionLabel string,
+	onToggleMenu func(),
+	onRefresh func(),
+	onAction func(),
+) layout.Dimensions {
+	changed := false
+	if h.MenuBtn.Clicked(gtx) && onToggleMenu != nil {
+		onToggleMenu()
+		changed = true
+	}
 	if h.RefreshBtn.Clicked(gtx) && onRefresh != nil {
 		onRefresh()
+		changed = true
 	}
-	if h.SyncBtn.Clicked(gtx) && onOpenSync != nil {
-		onOpenSync()
+	if h.ActionBtn.Clicked(gtx) && onAction != nil {
+		onAction()
+		changed = true
 	}
+	if changed {
+		gtx.Execute(op.InvalidateCmd{})
+	}
+
+	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 
 	return layout.Inset{
 		Top:    unit.Dp(12),
-		Bottom: unit.Dp(12),
+		Bottom: unit.Dp(10),
 		Left:   unit.Dp(16),
 		Right:  unit.Dp(16),
 	}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		return layout.Flex{
 			Axis:      layout.Horizontal,
 			Alignment: layout.Middle,
 			Spacing:   layout.SpaceBetween,
 		}.Layout(gtx,
-			// Title & SQLite Badge
+			// Left: Menu Hamburger Button + Screen Title
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 				return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
+					// Hamburger Menu Button (44dp touch area)
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-						lbl := material.H6(th.Theme, "WALLET")
-						lbl.Color = theme.ColorTextPrimary
-						lbl.TextSize = unit.Sp(18)
-						return lbl.Layout(gtx)
+						btn := material.Button(th.Theme, &h.MenuBtn, "☰")
+						btn.Background = theme.ColorSurfaceElevated
+						btn.Color = theme.ColorTextPrimary
+						btn.CornerRadius = unit.Dp(10)
+						btn.TextSize = unit.Sp(16)
+						btn.Inset = layout.Inset{Top: unit.Dp(8), Bottom: unit.Dp(8), Left: unit.Dp(12), Right: unit.Dp(12)}
+						return btn.Layout(gtx)
 					}),
-					layout.Rigid(layout.Spacer{Width: unit.Dp(8)}.Layout),
+
+					layout.Rigid(layout.Spacer{Width: unit.Dp(12)}.Layout),
+
+					// Title & Optional Subtitle
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-						return theme.Card(gtx, theme.ColorSurfaceElevated, unit.Dp(6), func(gtx layout.Context) layout.Dimensions {
-							return layout.Inset{
-								Top:    unit.Dp(2),
-								Bottom: unit.Dp(2),
-								Left:   unit.Dp(6),
-								Right:  unit.Dp(6),
-							}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-								badge := material.Caption(th.Theme, "SQLite Go")
-								badge.Color = theme.ColorIncome
-								badge.TextSize = unit.Sp(10)
-								return badge.Layout(gtx)
-							})
-						})
+						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+							layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+								lbl := material.H6(th.Theme, title)
+								lbl.Color = theme.ColorTextPrimary
+								lbl.TextSize = unit.Sp(17)
+								return lbl.Layout(gtx)
+							}),
+							layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+								if subtitle == "" {
+									return layout.Dimensions{}
+								}
+								sub := material.Caption(th.Theme, subtitle)
+								sub.Color = theme.ColorTextMuted
+								sub.TextSize = unit.Sp(11)
+								return sub.Layout(gtx)
+							}),
+						)
 					}),
 				)
 			}),
 
-			// Action Buttons (Refresh & Sync)
+			// Right: Action Buttons (e.g. Reload or Custom Action)
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 				return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-						btn := material.Button(th.Theme, &h.RefreshBtn, "Reload")
+						if onRefresh == nil {
+							return layout.Dimensions{}
+						}
+						btn := material.Button(th.Theme, &h.RefreshBtn, "↻")
 						btn.Background = theme.ColorSurfaceElevated
-						btn.Color = theme.ColorTextPrimary
-						btn.CornerRadius = unit.Dp(8)
-						btn.TextSize = unit.Sp(12)
-						btn.Inset = layout.Inset{Top: unit.Dp(6), Bottom: unit.Dp(6), Left: unit.Dp(10), Right: unit.Dp(10)}
+						btn.Color = theme.ColorTextMuted
+						btn.CornerRadius = unit.Dp(10)
+						btn.TextSize = unit.Sp(16)
+						btn.Inset = layout.Inset{Top: unit.Dp(8), Bottom: unit.Dp(8), Left: unit.Dp(11), Right: unit.Dp(11)}
 						return btn.Layout(gtx)
 					}),
-					layout.Rigid(layout.Spacer{Width: unit.Dp(8)}.Layout),
+
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-						btn := material.Button(th.Theme, &h.SyncBtn, "Sync")
-						btn.Background = theme.ColorSurfaceElevated
-						btn.Color = theme.ColorPrimary
-						btn.CornerRadius = unit.Dp(8)
-						btn.TextSize = unit.Sp(12)
-						btn.Inset = layout.Inset{Top: unit.Dp(6), Bottom: unit.Dp(6), Left: unit.Dp(10), Right: unit.Dp(10)}
-						return btn.Layout(gtx)
+						if actionLabel == "" || onAction == nil {
+							return layout.Dimensions{}
+						}
+						return layout.Inset{Left: unit.Dp(8)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+							btn := material.Button(th.Theme, &h.ActionBtn, actionLabel)
+							btn.Background = theme.ColorSurfaceElevated
+							btn.Color = theme.ColorPrimary
+							btn.CornerRadius = unit.Dp(10)
+							btn.TextSize = unit.Sp(12)
+							btn.Inset = layout.Inset{Top: unit.Dp(8), Bottom: unit.Dp(8), Left: unit.Dp(12), Right: unit.Dp(12)}
+							return btn.Layout(gtx)
+						})
 					}),
 				)
 			}),

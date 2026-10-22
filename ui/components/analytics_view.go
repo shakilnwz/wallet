@@ -30,20 +30,24 @@ func (a *AnalyticsView) Layout(
 		overall = &models.AccountSummary{}
 	}
 
+	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	a.List.Axis = layout.Vertical
 
 	return layout.Inset{Left: unit.Dp(16), Right: unit.Dp(16)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		return a.List.Layout(gtx, 2, func(gtx layout.Context, idx int) layout.Dimensions {
 			if idx == 0 {
 				// Card 1: Category Spending Breakdown
 				return layout.Inset{Bottom: unit.Dp(14)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+					gtx.Constraints.Min.X = gtx.Constraints.Max.X
 					return theme.Card(gtx, theme.ColorSurface, unit.Dp(18), func(gtx layout.Context) layout.Dimensions {
 						return layout.Inset{Top: unit.Dp(16), Bottom: unit.Dp(16), Left: unit.Dp(16), Right: unit.Dp(16)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+							gtx.Constraints.Min.X = gtx.Constraints.Max.X
 							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 								layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 									title := material.H6(th.Theme, "Spending by Category")
 									title.Color = theme.ColorTextPrimary
-									title.TextSize = unit.Sp(15)
+									title.TextSize = unit.Sp(16)
 									return title.Layout(gtx)
 								}),
 								layout.Rigid(layout.Spacer{Height: unit.Dp(12)}.Layout),
@@ -59,14 +63,17 @@ func (a *AnalyticsView) Layout(
 									for _, cat := range summary.Categories {
 										item := cat
 										rows = append(rows, layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-											return layout.Inset{Bottom: unit.Dp(10)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+											gtx.Constraints.Min.X = gtx.Constraints.Max.X
+											return layout.Inset{Bottom: unit.Dp(12)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+												gtx.Constraints.Min.X = gtx.Constraints.Max.X
 												return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 													layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-														return layout.Flex{Axis: layout.Horizontal, Spacing: layout.SpaceBetween}.Layout(gtx,
-															layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+														gtx.Constraints.Min.X = gtx.Constraints.Max.X
+														return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle, Spacing: layout.SpaceBetween}.Layout(gtx,
+															layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
 																l := material.Body2(th.Theme, item.Category)
 																l.Color = theme.ColorTextPrimary
-																l.TextSize = unit.Sp(12)
+																l.TextSize = unit.Sp(13)
 																return l.Layout(gtx)
 															}),
 															layout.Rigid(func(gtx layout.Context) layout.Dimensions {
@@ -78,8 +85,8 @@ func (a *AnalyticsView) Layout(
 															}),
 														)
 													}),
-													layout.Rigid(layout.Spacer{Height: unit.Dp(4)}.Layout),
-													// Percentage progress bar
+													layout.Rigid(layout.Spacer{Height: unit.Dp(6)}.Layout),
+													// Percentage progress bar (Full Width)
 													layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 														barWidth := gtx.Constraints.Max.X
 														filledWidth := int(float64(barWidth) * (item.Percentage / 100.0))
@@ -117,64 +124,71 @@ func (a *AnalyticsView) Layout(
 			}
 
 			// Card 2: Account Holdings Distribution
-			return theme.Card(gtx, theme.ColorSurface, unit.Dp(18), func(gtx layout.Context) layout.Dimensions {
-				return layout.Inset{Top: unit.Dp(16), Bottom: unit.Dp(16), Left: unit.Dp(16), Right: unit.Dp(16)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-						layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-							title := material.H6(th.Theme, "Account Distribution")
-							title.Color = theme.ColorTextPrimary
-							title.TextSize = unit.Sp(15)
-							return title.Layout(gtx)
-						}),
-						layout.Rigid(layout.Spacer{Height: unit.Dp(12)}.Layout),
-						layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-							return layout.Flex{Axis: layout.Horizontal, Spacing: layout.SpaceBetween}.Layout(gtx,
-								layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
-									return theme.Card(gtx, theme.ColorSurfaceElevated, unit.Dp(12), func(gtx layout.Context) layout.Dimensions {
-										return layout.Inset{Top: unit.Dp(10), Bottom: unit.Dp(10), Left: unit.Dp(12), Right: unit.Dp(12)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-											return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-												layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-													t := material.Caption(th.Theme, "Bank / MFS Account")
-													t.Color = theme.ColorPrimary
-													t.TextSize = unit.Sp(11)
-													return t.Layout(gtx)
-												}),
-												layout.Rigid(layout.Spacer{Height: unit.Dp(2)}.Layout),
-												layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-													v := material.Body1(th.Theme, theme.FormatCurrency(overall.BankBalance))
-													v.Color = theme.ColorTextPrimary
-													v.TextSize = unit.Sp(14)
-													return v.Layout(gtx)
-												}),
-											)
+			return layout.Inset{Bottom: unit.Dp(16)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+				gtx.Constraints.Min.X = gtx.Constraints.Max.X
+				return theme.Card(gtx, theme.ColorSurface, unit.Dp(18), func(gtx layout.Context) layout.Dimensions {
+					return layout.Inset{Top: unit.Dp(16), Bottom: unit.Dp(16), Left: unit.Dp(16), Right: unit.Dp(16)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+						gtx.Constraints.Min.X = gtx.Constraints.Max.X
+						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+							layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+								title := material.H6(th.Theme, "Account Distribution")
+								title.Color = theme.ColorTextPrimary
+								title.TextSize = unit.Sp(16)
+								return title.Layout(gtx)
+							}),
+							layout.Rigid(layout.Spacer{Height: unit.Dp(12)}.Layout),
+							layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+								gtx.Constraints.Min.X = gtx.Constraints.Max.X
+								return layout.Flex{Axis: layout.Horizontal, Spacing: layout.SpaceBetween}.Layout(gtx,
+									layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
+										gtx.Constraints.Min.X = gtx.Constraints.Max.X
+										return theme.Card(gtx, theme.ColorSurfaceElevated, unit.Dp(12), func(gtx layout.Context) layout.Dimensions {
+											return layout.Inset{Top: unit.Dp(12), Bottom: unit.Dp(12), Left: unit.Dp(14), Right: unit.Dp(14)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+												return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+													layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+														t := material.Caption(th.Theme, "Bank / MFS Account")
+														t.Color = theme.ColorPrimary
+														t.TextSize = unit.Sp(11)
+														return t.Layout(gtx)
+													}),
+													layout.Rigid(layout.Spacer{Height: unit.Dp(4)}.Layout),
+													layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+														v := material.Body1(th.Theme, theme.FormatCurrency(overall.BankBalance))
+														v.Color = theme.ColorTextPrimary
+														v.TextSize = unit.Sp(15)
+														return v.Layout(gtx)
+													}),
+												)
+											})
 										})
-									})
-								}),
-								layout.Rigid(layout.Spacer{Width: unit.Dp(10)}.Layout),
-								layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
-									return theme.Card(gtx, theme.ColorSurfaceElevated, unit.Dp(12), func(gtx layout.Context) layout.Dimensions {
-										return layout.Inset{Top: unit.Dp(10), Bottom: unit.Dp(10), Left: unit.Dp(12), Right: unit.Dp(12)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-											return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-												layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-													t := material.Caption(th.Theme, "Cash on Hand")
-													t.Color = theme.ColorIncome
-													t.TextSize = unit.Sp(11)
-													return t.Layout(gtx)
-												}),
-												layout.Rigid(layout.Spacer{Height: unit.Dp(2)}.Layout),
-												layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-													v := material.Body1(th.Theme, theme.FormatCurrency(overall.CashBalance))
-													v.Color = theme.ColorTextPrimary
-													v.TextSize = unit.Sp(14)
-													return v.Layout(gtx)
-												}),
-											)
+									}),
+									layout.Rigid(layout.Spacer{Width: unit.Dp(10)}.Layout),
+									layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
+										gtx.Constraints.Min.X = gtx.Constraints.Max.X
+										return theme.Card(gtx, theme.ColorSurfaceElevated, unit.Dp(12), func(gtx layout.Context) layout.Dimensions {
+											return layout.Inset{Top: unit.Dp(12), Bottom: unit.Dp(12), Left: unit.Dp(14), Right: unit.Dp(14)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+												return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+													layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+														t := material.Caption(th.Theme, "Cash Holdings")
+														t.Color = theme.ColorIncome
+														t.TextSize = unit.Sp(11)
+														return t.Layout(gtx)
+													}),
+													layout.Rigid(layout.Spacer{Height: unit.Dp(4)}.Layout),
+													layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+														v := material.Body1(th.Theme, theme.FormatCurrency(overall.CashBalance))
+														v.Color = theme.ColorTextPrimary
+														v.TextSize = unit.Sp(15)
+														return v.Layout(gtx)
+													}),
+												)
+											})
 										})
-									})
-								}),
-							)
-						}),
-					)
+									}),
+								)
+							}),
+						)
+					})
 				})
 			})
 		})

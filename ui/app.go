@@ -8,8 +8,11 @@ import (
 	"time"
 
 	"gioui.org/layout"
+	"gioui.org/op"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
+	"gioui.org/widget"
+	"gioui.org/widget/material"
 	"github.com/shakilnwz/wallet/core/models"
 	"github.com/shakilnwz/wallet/db"
 	"github.com/shakilnwz/wallet/sync"
@@ -35,6 +38,7 @@ type App struct {
 
 	// Components
 	Header        components.Header
+	NavDrawer     components.NavDrawer
 	MonthSelector components.MonthSelector
 	HeroCard      components.HeroCard
 	TxList        components.TxList
@@ -42,7 +46,12 @@ type App struct {
 	QuickAddSheet components.QuickAddSheet
 	AnalyticsView components.AnalyticsView
 	SyncView      components.SyncView
+	SettingsView  components.SettingsView
 	Snackbar      components.Snackbar
+
+	// Home screen shortcuts
+	HomeViewAllBtn  widget.Clickable
+	HomeQuickAddBtn widget.Clickable
 
 	// Sync
 	SyncServer *sync.Server
@@ -155,6 +164,9 @@ func (a *App) ReloadData() {
 	if firstErr != nil {
 		a.showError("Couldn't load data", firstErr)
 	}
+	if a.Invalidate != nil {
+		a.Invalidate()
+	}
 }
 
 func (a *App) saveTransaction(tx models.Transaction) {
@@ -196,6 +208,9 @@ func (a *App) startSync(peer string) {
 	}
 	a.SyncView.Syncing = true
 	a.SyncView.SetStatus("Syncing with "+peer+"...", false)
+	if a.Invalidate != nil {
+		a.Invalidate()
+	}
 
 	go func() {
 		pIns, pUpd, sIns, sUpd, err := a.SyncClient.FullTwoWaySync(peer, a.Database)
@@ -216,12 +231,15 @@ func (a *App) toggleServer() {
 		if err := a.SyncServer.Stop(); err != nil {
 			a.showError("Couldn't stop server", err)
 		}
-		return
-	}
-	if _, err := a.SyncServer.Start(syncPort); err != nil {
-		a.showError("Couldn't start server", err)
+	} else {
+		if _, err := a.SyncServer.Start(syncPort); err != nil {
+			a.showError("Couldn't start server", err)
+		}
 	}
 	a.LocalIP = sync.LocalIP()
+	if a.Invalidate != nil {
+		a.Invalidate()
+	}
 }
 
 func (a *App) deleteAll() {
@@ -236,9 +254,12 @@ func (a *App) deleteAll() {
 
 func (a *App) selectTab(t components.Tab) {
 	a.CurrentTab = t
-	if t == components.TabSync {
+	if t == components.TabSync || t == components.TabSettings {
 		a.SyncStats = a.Database.GetSyncStats()
 		a.LocalIP = sync.LocalIP()
+	}
+	if a.Invalidate != nil {
+		a.Invalidate()
 	}
 }
 
@@ -254,17 +275,22 @@ func (a *App) Layout(gtx layout.Context) layout.Dimensions {
 	paint.Fill(gtx.Ops, theme.ColorBackground)
 	gtx.Constraints.Min = gtx.Constraints.Max
 
-	// 2. Main screen, with the snackbar and quick-add sheet layered on top.
+	// 2. Main screen, with the drawer, snackbar, and quick-add sheet layered on top.
 	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(a.layoutMain),
 		layout.Expanded(func(gtx layout.Context) layout.Dimensions {
+			// Navigation Drawer (slides out smoothly from left)
+			return a.NavDrawer.Layout(gtx, a.Theme, a.CurrentTab, a.LocalIP, a.SyncStats.ActiveRecords, a.selectTab)
+		}),
+		layout.Expanded(func(gtx layout.Context) layout.Dimensions {
+			// Quick Add Sheet (slides up smoothly from bottom)
 			return a.QuickAddSheet.Layout(gtx, a.Theme, a.saveTransaction)
 		}),
 		layout.Expanded(func(gtx layout.Context) layout.Dimensions {
 			// Sit just above the bottom navigation bar.
 			return layout.S.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 				gtx.Constraints.Min = image.Point{}
-				return layout.Inset{Left: unit.Dp(16), Right: unit.Dp(16), Bottom: unit.Dp(84)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+				return layout.Inset{Left: unit.Dp(16), Right: unit.Dp(16), Bottom: unit.Dp(90)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 					return a.Snackbar.Layout(gtx, a.Theme)
 				})
 			})
@@ -273,66 +299,198 @@ func (a *App) Layout(gtx layout.Context) layout.Dimensions {
 }
 
 func (a *App) layoutMain(gtx layout.Context) layout.Dimensions {
+	gtx.Constraints.Min.X = gtx.Constraints.Max.X
+
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		// Header
+		// Top App Bar
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
+			title := "Wallet"
+			sub := "Dashboard"
+			actionLabel := ""
+			switch a.CurrentTab {
+			case components.TabLedger:
+				title = "Ledger"
+				sub = "All Transactions"
+			case components.TabInsights:
+				title = "Insights"
+				sub = "Spending Analytics"
+			case components.TabSync:
+				title = "P2P Sync"
+				sub = "Local Wi-Fi Network"
+			case components.TabSettings:
+				title = "Data & Settings"
+				sub = "Database Management"
+			}
+
 			return a.Header.Layout(gtx, a.Theme,
-				func() { // On Refresh
-					a.ReloadData()
-				},
-				func() { // On Open Sync
-					a.selectTab(components.TabSync)
-				},
+				title,
+				sub,
+				actionLabel,
+				a.NavDrawer.Toggle,
+				a.ReloadData,
+				nil,
 			)
 		}),
 
-		// Month Selector Carousel (Shown in Home, Ledger, and Insights tabs)
-		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			if a.CurrentTab == components.TabSync {
-				return layout.Dimensions{}
-			}
-			return a.MonthSelector.Layout(gtx, a.Theme, a.SelectedMonth, a.Months, func(m string) {
-				a.SelectedMonth = m
-				a.ReloadData()
-			})
-		}),
-
-		// Main Active Tab Content
+		// Main Active Screen Content (Full Width)
 		layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			switch a.CurrentTab {
 			case components.TabHome:
-				// Home: Hero Balance Card + Recent Transactions
-				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-						return a.HeroCard.Layout(gtx, a.Theme, a.AccountSummary, theme.FormatMonthDisplay(a.SelectedMonth))
-					}),
-					layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
-						return a.TxList.Layout(gtx, a.Theme, a.Transactions, a.QuickAddSheet.OpenEdit, a.deleteTransaction)
-					}),
-				)
+				return a.layoutHomeScreen(gtx)
 
 			case components.TabLedger:
-				// Ledger: Full History
-				return a.TxList.Layout(gtx, a.Theme, a.Transactions, a.QuickAddSheet.OpenEdit, a.deleteTransaction)
+				return a.layoutLedgerScreen(gtx)
 
 			case components.TabInsights:
-				// Insights: Spending Bars & Distribution
-				return a.AnalyticsView.Layout(gtx, a.Theme, a.MonthlySummary, a.AccountSummary)
+				return a.layoutInsightsScreen(gtx)
 
 			case components.TabSync:
-				// Sync & DB Management
-				return a.SyncView.Layout(gtx, a.Theme, a.SyncStats, a.LocalIP, a.SyncServer.IsRunning(), a.SyncServer.Port(),
+				return a.SyncView.Layout(gtx, a.Theme, a.LocalIP, a.SyncServer.IsRunning(), a.SyncServer.Port(),
 					a.toggleServer,
 					a.startSync,
+				)
+
+			case components.TabSettings:
+				return a.SettingsView.Layout(gtx, a.Theme, a.SyncStats,
 					a.deleteAll,
 				)
 			}
 			return layout.Dimensions{}
 		}),
 
-		// Bottom Thumb Navigation
+		// Bottom Thumb Navigation (Full Width)
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			return a.BottomNav.Layout(gtx, a.Theme, a.CurrentTab, a.selectTab, a.QuickAddSheet.Open)
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
+			return a.BottomNav.Layout(gtx, a.Theme, a.CurrentTab, a.selectTab, a.QuickAddSheet.Open, a.NavDrawer.Toggle)
+		}),
+	)
+}
+
+// layoutHomeScreen renders the clean, decluttered dashboard
+func (a *App) layoutHomeScreen(gtx layout.Context) layout.Dimensions {
+	gtx.Constraints.Min.X = gtx.Constraints.Max.X
+
+	// Handle Home shortcut clicks
+	if a.HomeViewAllBtn.Clicked(gtx) {
+		a.selectTab(components.TabLedger)
+		gtx.Execute(op.InvalidateCmd{})
+	}
+	if a.HomeQuickAddBtn.Clicked(gtx) {
+		a.QuickAddSheet.Open()
+		gtx.Execute(op.InvalidateCmd{})
+	}
+
+	// Show only the 5 most recent transactions on the home screen to declutter
+	recentTxs := a.Transactions
+	if len(recentTxs) > 5 {
+		recentTxs = recentTxs[:5]
+	}
+
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		// Hero Balance Card
+		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
+			return a.HeroCard.Layout(gtx, a.Theme, a.AccountSummary, theme.FormatMonthDisplay(a.SelectedMonth))
+		}),
+
+		// Quick Action Shortcuts Bar (Touch-Friendly)
+		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
+			return layout.Inset{Left: unit.Dp(16), Right: unit.Dp(16), Bottom: unit.Dp(12)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+				gtx.Constraints.Min.X = gtx.Constraints.Max.X
+				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+					layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
+						btn := material.Button(a.Theme.Theme, &a.HomeQuickAddBtn, "+ Add Entry")
+						btn.Background = theme.ColorPrimary
+						btn.Color = theme.ColorTextPrimary
+						btn.CornerRadius = unit.Dp(12)
+						btn.TextSize = unit.Sp(13)
+						btn.Inset = layout.Inset{Top: unit.Dp(11), Bottom: unit.Dp(11)}
+						return btn.Layout(gtx)
+					}),
+					layout.Rigid(layout.Spacer{Width: unit.Dp(10)}.Layout),
+					layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
+						btn := material.Button(a.Theme.Theme, &a.HomeViewAllBtn, "Full History →")
+						btn.Background = theme.ColorSurfaceElevated
+						btn.Color = theme.ColorTextPrimary
+						btn.CornerRadius = unit.Dp(12)
+						btn.TextSize = unit.Sp(13)
+						btn.Inset = layout.Inset{Top: unit.Dp(11), Bottom: unit.Dp(11)}
+						return btn.Layout(gtx)
+					}),
+				)
+			})
+		}),
+
+		// Recent Activity Section Header
+		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
+			return layout.Inset{Left: unit.Dp(18), Right: unit.Dp(18), Top: unit.Dp(4), Bottom: unit.Dp(8)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+				gtx.Constraints.Min.X = gtx.Constraints.Max.X
+				return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle, Spacing: layout.SpaceBetween}.Layout(gtx,
+					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+						lbl := material.Caption(a.Theme.Theme, "RECENT ACTIVITY")
+						lbl.Color = theme.ColorTextMuted
+						lbl.TextSize = unit.Sp(11)
+						return lbl.Layout(gtx)
+					}),
+					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+						btn := material.Button(a.Theme.Theme, &a.HomeViewAllBtn, "See All")
+						btn.Background = theme.ColorSurface
+						btn.Color = theme.ColorPrimary
+						btn.CornerRadius = unit.Dp(6)
+						btn.TextSize = unit.Sp(11)
+						btn.Inset = layout.Inset{Top: unit.Dp(3), Bottom: unit.Dp(3), Left: unit.Dp(8), Right: unit.Dp(8)}
+						return btn.Layout(gtx)
+					}),
+				)
+			})
+		}),
+
+		// Recent Transactions List
+		layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
+			return a.TxList.Layout(gtx, a.Theme, recentTxs, a.QuickAddSheet.OpenEdit, a.deleteTransaction)
+		}),
+	)
+}
+
+// layoutLedgerScreen renders the complete transaction register with month filter
+func (a *App) layoutLedgerScreen(gtx layout.Context) layout.Dimensions {
+	gtx.Constraints.Min.X = gtx.Constraints.Max.X
+
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
+			return a.MonthSelector.Layout(gtx, a.Theme, a.SelectedMonth, a.Months, func(m string) {
+				a.SelectedMonth = m
+				a.ReloadData()
+			})
+		}),
+		layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
+			return a.TxList.Layout(gtx, a.Theme, a.Transactions, a.QuickAddSheet.OpenEdit, a.deleteTransaction)
+		}),
+	)
+}
+
+// layoutInsightsScreen renders spending analysis & account distribution
+func (a *App) layoutInsightsScreen(gtx layout.Context) layout.Dimensions {
+	gtx.Constraints.Min.X = gtx.Constraints.Max.X
+
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
+			return a.MonthSelector.Layout(gtx, a.Theme, a.SelectedMonth, a.Months, func(m string) {
+				a.SelectedMonth = m
+				a.ReloadData()
+			})
+		}),
+		layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
+			return a.AnalyticsView.Layout(gtx, a.Theme, a.MonthlySummary, a.AccountSummary)
 		}),
 	)
 }
