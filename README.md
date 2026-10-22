@@ -66,6 +66,14 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
+### APK Signing
+Release APKs are signed with a stable release key so each release installs over the previous one (no uninstall, no data loss).
+- CI reads it from the `ANDROID_KEYSTORE_BASE64` and `ANDROID_KEYSTORE_PASSWORD` repository secrets and refuses to publish without them.
+- `scripts/build-android.sh` signs with the same key when `~/.local/share/wallet-signing/wallet-release.p12` (and `.pass`) exist, so local installs match releases. Override with `WALLET_KEYSTORE` / `WALLET_KEYSTORE_PASS_FILE`.
+- **Back up the keystore and password.** Android only accepts updates signed with the same key; if it is lost, users must uninstall (wiping local data) to install new versions.
+
+The APK version comes from the tag: `v1.2.3` → versionName `1.2.3`, versionCode `10203`.
+
 ### Local Release Build
 Build release desktop archives on your local machine:
 ```bash
