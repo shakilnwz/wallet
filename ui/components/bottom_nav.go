@@ -3,6 +3,7 @@ package components
 import (
 	"gioui.org/layout"
 	"gioui.org/op"
+	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
@@ -73,8 +74,8 @@ func (b *BottomNav) Layout(
 			return layout.Inset{
 				Top:    unit.Dp(6),
 				Bottom: unit.Dp(6),
-				Left:   unit.Dp(10),
-				Right:  unit.Dp(10),
+				Left:   unit.Dp(8),
+				Right:  unit.Dp(8),
 			}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 				gtx.Constraints.Min.X = gtx.Constraints.Max.X
 				return layout.Flex{
@@ -134,19 +135,29 @@ func (b *BottomNav) layoutTabBtn(
 		bg = theme.ColorSurfaceElevated
 	}
 
+	gtx.Constraints.Min.X = gtx.Constraints.Max.X
+
 	return click.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		return theme.Card(gtx, bg, unit.Dp(12), func(gtx layout.Context) layout.Dimensions {
-			return layout.Inset{Top: unit.Dp(6), Bottom: unit.Dp(6), Left: unit.Dp(4), Right: unit.Dp(4)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
+			return layout.Inset{Top: unit.Dp(6), Bottom: unit.Dp(6), Left: unit.Dp(2), Right: unit.Dp(2)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+				gtx.Constraints.Min.X = gtx.Constraints.Max.X
 				return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-						return theme.LayoutIcon(gtx, ic, col, unit.Dp(18))
+						return layout.Center.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+							return theme.LayoutIcon(gtx, ic, col, unit.Dp(20))
+						})
 					}),
 					layout.Rigid(layout.Spacer{Height: unit.Dp(3)}.Layout),
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-						lbl := material.Caption(th.Theme, title)
-						lbl.Color = col
-						lbl.TextSize = unit.Sp(10)
-						return lbl.Layout(gtx)
+						return layout.Center.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+							lbl := material.Caption(th.Theme, title)
+							lbl.Color = col
+							lbl.TextSize = unit.Sp(10)
+							lbl.Alignment = text.Middle
+							return lbl.Layout(gtx)
+						})
 					}),
 				)
 			})
