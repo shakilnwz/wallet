@@ -318,7 +318,7 @@ func (d *DB) UpdateTransaction(tx models.Transaction) error {
 		amount_paisa = ?,
 		account = ?,
 		notes = ?,
-		updated_at = ?,
+		updated_at = MAX(?, updated_at + 1),
 		version = version + 1
 	WHERE id = ? AND deleted_at IS NULL
 	`
@@ -339,11 +339,28 @@ func (d *DB) SoftDeleteTransaction(id string) error {
 	query := `
 	UPDATE transactions SET
 		deleted_at = ?,
-		updated_at = ?,
+		updated_at = MAX(?, updated_at + 1),
 		version = version + 1
 	WHERE id = ?
 	`
 	_, err := d.db.Exec(query, now, now, id)
+	return err
+}
+
+// RestoreTransaction undoes a soft delete. The bumped updated_at makes the
+// restore win over the tombstone on peers too.
+func (d *DB) RestoreTransaction(id string) error {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	now := time.Now().UnixMilli()
+	_, err := d.db.Exec(`
+	UPDATE transactions SET
+		deleted_at = NULL,
+		updated_at = MAX(?, updated_at + 1),
+		version = version + 1
+	WHERE id = ? AND deleted_at IS NOT NULL
+	`, now, id)
 	return err
 }
 
@@ -358,7 +375,7 @@ func (d *DB) ClearAllData() (int64, error) {
 	res, err := d.db.Exec(`
 	UPDATE transactions SET
 		deleted_at = ?,
-		updated_at = ?,
+		updated_at = MAX(?, updated_at + 1),
 		version = version + 1
 	WHERE deleted_at IS NULL
 	`, now, now)
@@ -483,28 +500,29 @@ func (d *DB) GetAvailableMonths() ([]string, error) {
 	return scanStrings(rows)
 }
 
-func (d *DB) GetRecentCategories() ([]string, error) {
-	return d.mostUsed("exp_cat")
+// GetRecentCategories returns the most used categories for a transaction type.
+func (d *DB) GetRecentCategories(typ models.TransactionType) ([]string, error) {
+	return d.mostUsed("exp_cat", typ)
 }
 
-func (d *DB) GetRecentBeneficiaries() ([]string, error) {
-	return d.mostUsed("benf")
+func (d *DB) GetRecentBeneficiaries(typ models.TransactionType) ([]string, error) {
+	return d.mostUsed("benf", typ)
 }
 
-// mostUsed returns the 15 most frequent values of column among live rows.
-// column must be a trusted identifier, never user input.
-func (d *DB) mostUsed(column string) ([]string, error) {
+// mostUsed returns the 15 most frequent values of column among live rows of
+// the given type. column must be a trusted identifier, never user input.
+func (d *DB) mostUsed(column string, typ models.TransactionType) ([]string, error) {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
 	rows, err := d.db.Query(`
-		SELECT ` + column + `
+		SELECT `+column+`
 		FROM transactions
-		WHERE deleted_at IS NULL
-		GROUP BY ` + column + `
-		ORDER BY COUNT(*) DESC
+		WHERE deleted_at IS NULL AND type = ?
+		GROUP BY `+column+`
+		ORDER BY COUNT(*) DESC, MAX(updated_at) DESC
 		LIMIT 15
-	`)
+	`, string(typ))
 	if err != nil {
 		return nil, err
 	}

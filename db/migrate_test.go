@@ -216,3 +216,59 @@ func TestPragmasApplyToEveryConnection(t *testing.T) {
 		}
 	}
 }
+
+func TestRestoreTransactionSyncsToPeer(t *testing.T) {
+	local := openTestDB(t, "local.db")
+	peer := openTestDB(t, "peer.db")
+	tx := addTx(t, local, "2026-10-01", models.TypeExpense, "Food", 100_00, models.AccountCash)
+
+	sync := func() {
+		t.Helper()
+		pkg, err := local.ExportSyncPackage()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, _, _, err := peer.ImportAndMergeSyncPackage(pkg); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if err := local.SoftDeleteTransaction(tx.ID); err != nil {
+		t.Fatal(err)
+	}
+	sync()
+	if err := local.RestoreTransaction(tx.ID); err != nil {
+		t.Fatal(err)
+	}
+	sync()
+
+	for name, d := range map[string]*DB{"local": local, "peer": peer} {
+		txs, err := d.GetTransactions(QueryFilter{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(txs) != 1 || txs[0].Amount != 100_00 {
+			t.Errorf("%s: got %d live transactions after restore, want 1", name, len(txs))
+		}
+	}
+}
+
+func TestRecentCategoriesByType(t *testing.T) {
+	d := openTestDB(t, "recent.db")
+	addTx(t, d, "2026-10-01", models.TypeExpense, "Wifi", 1, models.AccountCash)
+	addTx(t, d, "2026-10-02", models.TypeExpense, "Wifi", 1, models.AccountCash)
+	addTx(t, d, "2026-10-03", models.TypeExpense, "Food", 1, models.AccountCash)
+	addTx(t, d, "2026-10-04", models.TypeIncome, "Salary", 1, models.AccountBank)
+
+	exp, err := d.GetRecentCategories(models.TypeExpense)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(exp) != 2 || exp[0] != "Wifi" || exp[1] != "Food" {
+		t.Errorf("expense categories = %v, want [Wifi Food]", exp)
+	}
+	inc, _ := d.GetRecentCategories(models.TypeIncome)
+	if len(inc) != 1 || inc[0] != "Salary" {
+		t.Errorf("income categories = %v, want [Salary]", inc)
+	}
+}

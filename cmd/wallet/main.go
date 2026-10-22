@@ -30,6 +30,7 @@ func main() {
 			app.MinSize(unit.Dp(320), unit.Dp(568)),
 		)
 
+		walletUI.Invalidate = w.Invalidate
 		loopErr := runEventLoop(w, walletUI)
 
 		// app.Main never returns (on Android too), so deferred calls in main
