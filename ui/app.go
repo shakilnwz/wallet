@@ -412,7 +412,7 @@ func (a *App) layoutHomeScreen(gtx layout.Context) layout.Dimensions {
 					}),
 					layout.Rigid(layout.Spacer{Width: unit.Dp(10)}.Layout),
 					layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
-						btn := material.Button(a.Theme.Theme, &a.HomeViewAllBtn, "Full History →")
+						btn := material.Button(a.Theme.Theme, &a.HomeViewAllBtn, "Full History >")
 						btn.Background = theme.ColorSurfaceElevated
 						btn.Color = theme.ColorTextPrimary
 						btn.CornerRadius = unit.Dp(12)

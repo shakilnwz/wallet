@@ -234,11 +234,10 @@ func (d *NavDrawer) layoutHeader(gtx layout.Context, th *theme.Theme, totalTxCou
 						)
 					}),
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-						btn := material.Button(th.Theme, &d.CloseBtn, "✕")
+						btn := material.IconButton(th.Theme, &d.CloseBtn, theme.IconClose, "Close")
 						btn.Background = theme.ColorSurfaceElevated
 						btn.Color = theme.ColorTextMuted
-						btn.CornerRadius = unit.Dp(8)
-						btn.TextSize = unit.Sp(12)
+						btn.Size = unit.Dp(16)
 						btn.Inset = layout.UniformInset(unit.Dp(8))
 						return btn.Layout(gtx)
 					}),
@@ -270,27 +269,27 @@ func (d *NavDrawer) layoutMenu(gtx layout.Context, th *theme.Theme, currentTab T
 	}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-				return d.layoutMenuItem(gtx, th, &d.HomeBtn, "Dashboard", "Overview & Recent", currentTab == TabHome)
+				return d.layoutMenuItem(gtx, th, &d.HomeBtn, theme.IconHome, "Dashboard", "Overview & Recent", currentTab == TabHome)
 			}),
 			layout.Rigid(layout.Spacer{Height: unit.Dp(6)}.Layout),
 
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-				return d.layoutMenuItem(gtx, th, &d.LedgerBtn, "Ledger", "All Transactions & History", currentTab == TabLedger)
+				return d.layoutMenuItem(gtx, th, &d.LedgerBtn, theme.IconLedger, "Ledger", "All Transactions & History", currentTab == TabLedger)
 			}),
 			layout.Rigid(layout.Spacer{Height: unit.Dp(6)}.Layout),
 
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-				return d.layoutMenuItem(gtx, th, &d.InsightsBtn, "Insights", "Spending Analytics & Charts", currentTab == TabInsights)
+				return d.layoutMenuItem(gtx, th, &d.InsightsBtn, theme.IconInsights, "Insights", "Spending Analytics & Charts", currentTab == TabInsights)
 			}),
 			layout.Rigid(layout.Spacer{Height: unit.Dp(6)}.Layout),
 
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-				return d.layoutMenuItem(gtx, th, &d.SyncBtn, "P2P Sync", "Local Wi-Fi Peer Sync", currentTab == TabSync)
+				return d.layoutMenuItem(gtx, th, &d.SyncBtn, theme.IconSync, "P2P Sync", "Local Wi-Fi Peer Sync", currentTab == TabSync)
 			}),
 			layout.Rigid(layout.Spacer{Height: unit.Dp(6)}.Layout),
 
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-				return d.layoutMenuItem(gtx, th, &d.SettingsBtn, "Data & Settings", "DB Stats, Backup & Reset", currentTab == TabSettings)
+				return d.layoutMenuItem(gtx, th, &d.SettingsBtn, theme.IconSettings, "Data & Settings", "DB Stats, Backup & Reset", currentTab == TabSettings)
 			}),
 		)
 	})
@@ -300,6 +299,7 @@ func (d *NavDrawer) layoutMenuItem(
 	gtx layout.Context,
 	th *theme.Theme,
 	click *widget.Clickable,
+	ic *widget.Icon,
 	title string,
 	subtitle string,
 	isActive bool,
@@ -309,13 +309,13 @@ func (d *NavDrawer) layoutMenuItem(
 	bg := theme.ColorSurface
 	titleColor := theme.ColorTextMuted
 	subColor := theme.ColorTextDim
-	accentBar := false
+	iconColor := theme.ColorTextMuted
 
 	if isActive {
 		bg = theme.ColorSurfaceElevated
 		titleColor = theme.ColorTextPrimary
 		subColor = theme.ColorPrimary
-		accentBar = true
+		iconColor = theme.ColorPrimary
 	}
 
 	return click.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
@@ -329,23 +329,9 @@ func (d *NavDrawer) layoutMenuItem(
 				gtx.Constraints.Min.X = gtx.Constraints.Max.X
 				return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-						if !accentBar {
-							return layout.Dimensions{}
-						}
-						barW := gtx.Dp(unit.Dp(3))
-						barH := gtx.Dp(unit.Dp(24))
-						paint.FillShape(gtx.Ops, theme.ColorPrimary, clip.RRect{
-							Rect: image.Rect(0, 0, barW, barH),
-							SE:   barW / 2, SW: barW / 2, NW: barW / 2, NE: barW / 2,
-						}.Op(gtx.Ops))
-						return layout.Dimensions{Size: image.Pt(barW, barH)}
+						return theme.LayoutIcon(gtx, ic, iconColor, unit.Dp(20))
 					}),
-					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-						if !accentBar {
-							return layout.Dimensions{}
-						}
-						return layout.Spacer{Width: unit.Dp(10)}.Layout(gtx)
-					}),
+					layout.Rigid(layout.Spacer{Width: unit.Dp(12)}.Layout),
 					layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
 						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 							layout.Rigid(func(gtx layout.Context) layout.Dimensions {
@@ -389,7 +375,7 @@ func (d *NavDrawer) layoutFooter(gtx layout.Context, th *theme.Theme, localIP st
 			}),
 			layout.Rigid(layout.Spacer{Height: unit.Dp(4)}.Layout),
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-				lbl := material.Caption(th.Theme, "Wallet v0.2.0 • Native Go")
+				lbl := material.Caption(th.Theme, "Wallet v0.2.0 | Native Go")
 				lbl.Color = theme.ColorTextDim
 				lbl.TextSize = unit.Sp(10)
 				return lbl.Layout(gtx)

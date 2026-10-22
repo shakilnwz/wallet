@@ -53,8 +53,6 @@ func DefaultCategories(t models.TransactionType) []string {
 type QuickAddSheet struct {
 	IsOpen bool
 
-	// Categories returns the chips offered for a type, most relevant first.
-	// When nil, DefaultCategories is used.
 	Categories func(models.TransactionType) []string
 
 	EditingID   string // set when editing an existing transaction
@@ -327,7 +325,7 @@ func (s *QuickAddSheet) layoutBody(gtx layout.Context, th *theme.Theme) layout.D
 	gap := func(dp unit.Dp) layout.Widget { return layout.Spacer{Height: dp}.Layout }
 
 	rows := []layout.Widget{
-		// Header: Title & Close Button (Full Width)
+		// Header: Title & Vector Close Button
 		func(gtx layout.Context) layout.Dimensions {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle, Spacing: layout.SpaceBetween}.Layout(gtx,
@@ -342,13 +340,18 @@ func (s *QuickAddSheet) layoutBody(gtx layout.Context, th *theme.Theme) layout.D
 					return title.Layout(gtx)
 				}),
 				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-					return pill(gtx, th, &s.CloseBtn, "✕", false, theme.ColorSurfaceElevated, unit.Sp(14))
+					btn := material.IconButton(th.Theme, &s.CloseBtn, theme.IconClose, "Close")
+					btn.Background = theme.ColorSurfaceElevated
+					btn.Color = theme.ColorTextMuted
+					btn.Size = unit.Dp(18)
+					btn.Inset = layout.UniformInset(unit.Dp(8))
+					return btn.Layout(gtx)
 				}),
 			)
 		},
 		gap(12),
 
-		// Type Segmented Switch: Expense vs Income (Full Width)
+		// Type Segmented Switch: Expense vs Income
 		func(gtx layout.Context) layout.Dimensions {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			return theme.Card(gtx, theme.ColorSurfaceElevated, unit.Dp(12), func(gtx layout.Context) layout.Dimensions {
@@ -367,7 +370,7 @@ func (s *QuickAddSheet) layoutBody(gtx layout.Context, th *theme.Theme) layout.D
 		},
 		gap(10),
 
-		// Live Amount Display (Full Width)
+		// Live Amount Display
 		func(gtx layout.Context) layout.Dimensions {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			return theme.Card(gtx, theme.ColorSurfaceElevated, unit.Dp(14), func(gtx layout.Context) layout.Dimensions {
@@ -389,7 +392,7 @@ func (s *QuickAddSheet) layoutBody(gtx layout.Context, th *theme.Theme) layout.D
 		},
 		gap(10),
 
-		// Category chips: horizontally scrollable (Full Width)
+		// Category chips
 		func(gtx layout.Context) layout.Dimensions {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			return s.CatList.Layout(gtx, len(s.cats), func(gtx layout.Context, i int) layout.Dimensions {
@@ -400,7 +403,7 @@ func (s *QuickAddSheet) layoutBody(gtx layout.Context, th *theme.Theme) layout.D
 		},
 		gap(10),
 
-		// Payee & notes (Full Width)
+		// Payee & notes
 		func(gtx layout.Context) layout.Dimensions {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			hint := "Paid to (optional)"
@@ -416,12 +419,17 @@ func (s *QuickAddSheet) layoutBody(gtx layout.Context, th *theme.Theme) layout.D
 		},
 		gap(10),
 
-		// Date Selector: step by day, with Today / Yesterday shortcuts (Full Width)
+		// Date Selector: vector chevron buttons + Today/Yesterday shortcuts
 		func(gtx layout.Context) layout.Dimensions {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-					return pill(gtx, th, &s.PrevDayBtn, "◀", false, theme.ColorSurfaceElevated, unit.Sp(12))
+					btn := material.IconButton(th.Theme, &s.PrevDayBtn, theme.IconChevronLeft, "Previous Day")
+					btn.Background = theme.ColorSurfaceElevated
+					btn.Color = theme.ColorTextPrimary
+					btn.Size = unit.Dp(18)
+					btn.Inset = layout.Inset{Top: unit.Dp(6), Bottom: unit.Dp(6), Left: unit.Dp(10), Right: unit.Dp(10)}
+					return btn.Layout(gtx)
 				}),
 				layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
 					return layout.Center.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
@@ -431,7 +439,12 @@ func (s *QuickAddSheet) layoutBody(gtx layout.Context, th *theme.Theme) layout.D
 					})
 				}),
 				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-					return pill(gtx, th, &s.NextDayBtn, "▶", false, theme.ColorSurfaceElevated, unit.Sp(12))
+					btn := material.IconButton(th.Theme, &s.NextDayBtn, theme.IconChevronRight, "Next Day")
+					btn.Background = theme.ColorSurfaceElevated
+					btn.Color = theme.ColorTextPrimary
+					btn.Size = unit.Dp(18)
+					btn.Inset = layout.Inset{Top: unit.Dp(6), Bottom: unit.Dp(6), Left: unit.Dp(10), Right: unit.Dp(10)}
+					return btn.Layout(gtx)
 				}),
 				layout.Rigid(layout.Spacer{Width: unit.Dp(8)}.Layout),
 				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
@@ -445,7 +458,7 @@ func (s *QuickAddSheet) layoutBody(gtx layout.Context, th *theme.Theme) layout.D
 		},
 		gap(10),
 
-		// Account Toggle: Bank Account vs Cash (Full Width)
+		// Account Toggle: Bank vs Cash
 		func(gtx layout.Context) layout.Dimensions {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
@@ -460,7 +473,7 @@ func (s *QuickAddSheet) layoutBody(gtx layout.Context, th *theme.Theme) layout.D
 		},
 		gap(12),
 
-		// Embedded Numeric Keypad (Full Width)
+		// Embedded Numeric Keypad
 		func(gtx layout.Context) layout.Dimensions {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			return s.Keypad.Layout(gtx, th, s.AmountStr, func(newVal string) {
@@ -481,7 +494,7 @@ func (s *QuickAddSheet) layoutBody(gtx layout.Context, th *theme.Theme) layout.D
 			return layout.Inset{Bottom: unit.Dp(8)}.Layout(gtx, lbl.Layout)
 		},
 
-		// Submit Action Button (Full Width, Touch-Friendly)
+		// Submit Action Button
 		func(gtx layout.Context) layout.Dimensions {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			submitText := "Save Expense"

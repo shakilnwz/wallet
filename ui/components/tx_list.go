@@ -88,7 +88,7 @@ func (l *TxList) Layout(
 										// Circular indicator pill
 										layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 											dotColor := theme.ColorExpense
-											dotSign := "−"
+											dotSign := "-"
 											if tx.Type == models.TypeIncome {
 												dotColor = theme.ColorIncome
 												dotSign = "+"
@@ -116,7 +116,7 @@ func (l *TxList) Layout(
 												}),
 												layout.Rigid(layout.Spacer{Height: unit.Dp(2)}.Layout),
 												layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-													subText := fmt.Sprintf("%s • %s • %s", tx.ExpCat, tx.Account, theme.FormatDateDisplay(tx.Date))
+													subText := fmt.Sprintf("%s | %s | %s", tx.ExpCat, tx.Account, theme.FormatDateDisplay(tx.Date))
 													sub := material.Caption(th.Theme, subText)
 													sub.Color = theme.ColorTextMuted
 													sub.TextSize = unit.Sp(11)
@@ -139,12 +139,12 @@ func (l *TxList) Layout(
 
 								layout.Rigid(layout.Spacer{Width: unit.Dp(8)}.Layout),
 
-								// Right: Amount + Delete Button
+								// Right: Amount + Vector Delete Icon Button
 								layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 									return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
 										layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 											amtColor := theme.ColorTextPrimary
-											prefix := "−"
+											prefix := "-"
 											if tx.Type == models.TypeIncome {
 												amtColor = theme.ColorIncome
 												prefix = "+"
@@ -155,14 +155,13 @@ func (l *TxList) Layout(
 											val.TextSize = unit.Sp(14)
 											return val.Layout(gtx)
 										}),
-										layout.Rigid(layout.Spacer{Width: unit.Dp(10)}.Layout),
+										layout.Rigid(layout.Spacer{Width: unit.Dp(8)}.Layout),
 										layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-											btn := material.Button(th.Theme, &l.DeleteBtns[idx], "✕")
+											btn := material.IconButton(th.Theme, &l.DeleteBtns[idx], theme.IconClose, "Delete")
 											btn.Background = theme.ColorSurfaceElevated
 											btn.Color = theme.ColorExpense
-											btn.CornerRadius = unit.Dp(8)
-											btn.TextSize = unit.Sp(11)
-											btn.Inset = layout.Inset{Top: unit.Dp(8), Bottom: unit.Dp(8), Left: unit.Dp(10), Right: unit.Dp(10)}
+											btn.Size = unit.Dp(14)
+											btn.Inset = layout.UniformInset(unit.Dp(6))
 											return btn.Layout(gtx)
 										}),
 									)

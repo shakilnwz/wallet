@@ -217,7 +217,7 @@ func (s *SettingsView) Layout(
 								layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 									txt := "Deletes every transaction on this device and writes tombstones that sync to paired devices."
 									if s.confirmReset {
-										txt = fmt.Sprintf("⚠️ Delete all %d transactions? This action will sync to other paired devices.", stats.ActiveRecords)
+										txt = fmt.Sprintf("Delete all %d transactions? This action will sync to other paired devices.", stats.ActiveRecords)
 									}
 									d := material.Caption(th.Theme, txt)
 									d.Color = theme.ColorTextMuted

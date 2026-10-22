@@ -59,20 +59,19 @@ func (h *Header) Layout(
 			// Left: Menu Hamburger Button + Screen Title
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 				return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
-					// Hamburger Menu Button (44dp touch area)
+					// Hamburger Menu Vector Icon Button
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-						btn := material.Button(th.Theme, &h.MenuBtn, "☰")
+						btn := material.IconButton(th.Theme, &h.MenuBtn, theme.IconMenu, "Menu")
 						btn.Background = theme.ColorSurfaceElevated
 						btn.Color = theme.ColorTextPrimary
-						btn.CornerRadius = unit.Dp(10)
-						btn.TextSize = unit.Sp(16)
-						btn.Inset = layout.Inset{Top: unit.Dp(8), Bottom: unit.Dp(8), Left: unit.Dp(12), Right: unit.Dp(12)}
+						btn.Size = unit.Dp(20)
+						btn.Inset = layout.UniformInset(unit.Dp(10))
 						return btn.Layout(gtx)
 					}),
 
 					layout.Rigid(layout.Spacer{Width: unit.Dp(12)}.Layout),
 
-					// Title & Optional Subtitle
+					// Title & Subtitle
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 							layout.Rigid(func(gtx layout.Context) layout.Dimensions {
@@ -95,19 +94,18 @@ func (h *Header) Layout(
 				)
 			}),
 
-			// Right: Action Buttons (e.g. Reload or Custom Action)
+			// Right: Action Buttons (Vector Refresh or Text Action)
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 				return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 						if onRefresh == nil {
 							return layout.Dimensions{}
 						}
-						btn := material.Button(th.Theme, &h.RefreshBtn, "↻")
+						btn := material.IconButton(th.Theme, &h.RefreshBtn, theme.IconRefresh, "Refresh")
 						btn.Background = theme.ColorSurfaceElevated
 						btn.Color = theme.ColorTextMuted
-						btn.CornerRadius = unit.Dp(10)
-						btn.TextSize = unit.Sp(16)
-						btn.Inset = layout.Inset{Top: unit.Dp(8), Bottom: unit.Dp(8), Left: unit.Dp(11), Right: unit.Dp(11)}
+						btn.Size = unit.Dp(18)
+						btn.Inset = layout.UniformInset(unit.Dp(10))
 						return btn.Layout(gtx)
 					}),
 

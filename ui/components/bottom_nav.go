@@ -35,7 +35,6 @@ func (b *BottomNav) Layout(
 	onOpenAdd func(),
 	onToggleDrawer func(),
 ) layout.Dimensions {
-	// Process click events immediately
 	changed := false
 	if b.HomeBtn.Clicked(gtx) && onSelectTab != nil {
 		onSelectTab(TabHome)
@@ -85,35 +84,34 @@ func (b *BottomNav) Layout(
 				}.Layout(gtx,
 					// Home tab
 					layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
-						return b.layoutTabBtn(gtx, th, &b.HomeBtn, "Home", currentTab == TabHome)
+						return b.layoutTabBtn(gtx, th, &b.HomeBtn, theme.IconHome, "Home", currentTab == TabHome)
 					}),
 
 					// Ledger tab
 					layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
-						return b.layoutTabBtn(gtx, th, &b.LedgerBtn, "Ledger", currentTab == TabLedger)
+						return b.layoutTabBtn(gtx, th, &b.LedgerBtn, theme.IconLedger, "Ledger", currentTab == TabLedger)
 					}),
 
-					// Center Prominent Add (+) Button (Large touch target)
+					// Center Prominent Add (+) Button (Large touch target with vector icon)
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 						return layout.Inset{Left: unit.Dp(6), Right: unit.Dp(6)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-							btn := material.Button(th.Theme, &b.AddBtn, "+")
+							btn := material.IconButton(th.Theme, &b.AddBtn, theme.IconAdd, "Add Transaction")
 							btn.Background = theme.ColorPrimary
 							btn.Color = theme.ColorTextPrimary
-							btn.CornerRadius = unit.Dp(16)
-							btn.TextSize = unit.Sp(22)
-							btn.Inset = layout.Inset{Top: unit.Dp(8), Bottom: unit.Dp(8), Left: unit.Dp(20), Right: unit.Dp(20)}
+							btn.Size = unit.Dp(22)
+							btn.Inset = layout.Inset{Top: unit.Dp(10), Bottom: unit.Dp(10), Left: unit.Dp(18), Right: unit.Dp(18)}
 							return btn.Layout(gtx)
 						})
 					}),
 
 					// Insights tab
 					layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
-						return b.layoutTabBtn(gtx, th, &b.InsightsBtn, "Insights", currentTab == TabInsights)
+						return b.layoutTabBtn(gtx, th, &b.InsightsBtn, theme.IconInsights, "Insights", currentTab == TabInsights)
 					}),
 
-					// More / Drawer button
+					// Menu tab (opens Drawer)
 					layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
-						return b.layoutTabBtn(gtx, th, &b.DrawerBtn, "Menu ☰", currentTab == TabSync || currentTab == TabSettings)
+						return b.layoutTabBtn(gtx, th, &b.DrawerBtn, theme.IconMenu, "Menu", currentTab == TabSync || currentTab == TabSettings)
 					}),
 				)
 			})
@@ -121,7 +119,14 @@ func (b *BottomNav) Layout(
 	})
 }
 
-func (b *BottomNav) layoutTabBtn(gtx layout.Context, th *theme.Theme, click *widget.Clickable, title string, isActive bool) layout.Dimensions {
+func (b *BottomNav) layoutTabBtn(
+	gtx layout.Context,
+	th *theme.Theme,
+	click *widget.Clickable,
+	ic *widget.Icon,
+	title string,
+	isActive bool,
+) layout.Dimensions {
 	col := theme.ColorTextMuted
 	bg := theme.ColorSurface
 	if isActive {
@@ -129,11 +134,22 @@ func (b *BottomNav) layoutTabBtn(gtx layout.Context, th *theme.Theme, click *wid
 		bg = theme.ColorSurfaceElevated
 	}
 
-	btn := material.Button(th.Theme, click, title)
-	btn.Background = bg
-	btn.Color = col
-	btn.CornerRadius = unit.Dp(12)
-	btn.TextSize = unit.Sp(12)
-	btn.Inset = layout.Inset{Top: unit.Dp(10), Bottom: unit.Dp(10), Left: unit.Dp(4), Right: unit.Dp(4)}
-	return btn.Layout(gtx)
+	return click.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+		return theme.Card(gtx, bg, unit.Dp(12), func(gtx layout.Context) layout.Dimensions {
+			return layout.Inset{Top: unit.Dp(6), Bottom: unit.Dp(6), Left: unit.Dp(4), Right: unit.Dp(4)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+				return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
+					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+						return theme.LayoutIcon(gtx, ic, col, unit.Dp(18))
+					}),
+					layout.Rigid(layout.Spacer{Height: unit.Dp(3)}.Layout),
+					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+						lbl := material.Caption(th.Theme, title)
+						lbl.Color = col
+						lbl.TextSize = unit.Sp(10)
+						return lbl.Layout(gtx)
+					}),
+				)
+			})
+		})
+	})
 }

@@ -97,14 +97,13 @@ func (m *MonthSelector) Layout(
 					Alignment: layout.Middle,
 					Spacing:   layout.SpaceBetween,
 				}.Layout(gtx,
-					// Prev button (Touch-friendly hit area)
+					// Prev button (Vector Icon Button)
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-						btn := material.Button(th.Theme, &m.PrevBtn, "◀")
+						btn := material.IconButton(th.Theme, &m.PrevBtn, theme.IconChevronLeft, "Previous Month")
 						btn.Background = theme.ColorSurfaceElevated
 						btn.Color = theme.ColorTextPrimary
-						btn.CornerRadius = unit.Dp(10)
-						btn.TextSize = unit.Sp(12)
-						btn.Inset = layout.Inset{Top: unit.Dp(8), Bottom: unit.Dp(8), Left: unit.Dp(14), Right: unit.Dp(14)}
+						btn.Size = unit.Dp(18)
+						btn.Inset = layout.Inset{Top: unit.Dp(6), Bottom: unit.Dp(6), Left: unit.Dp(12), Right: unit.Dp(12)}
 						return btn.Layout(gtx)
 					}),
 
@@ -122,14 +121,13 @@ func (m *MonthSelector) Layout(
 						})
 					}),
 
-					// Next button (Touch-friendly hit area)
+					// Next button (Vector Icon Button)
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-						btn := material.Button(th.Theme, &m.NextBtn, "▶")
+						btn := material.IconButton(th.Theme, &m.NextBtn, theme.IconChevronRight, "Next Month")
 						btn.Background = theme.ColorSurfaceElevated
 						btn.Color = theme.ColorTextPrimary
-						btn.CornerRadius = unit.Dp(10)
-						btn.TextSize = unit.Sp(12)
-						btn.Inset = layout.Inset{Top: unit.Dp(8), Bottom: unit.Dp(8), Left: unit.Dp(14), Right: unit.Dp(14)}
+						btn.Size = unit.Dp(18)
+						btn.Inset = layout.Inset{Top: unit.Dp(6), Bottom: unit.Dp(6), Left: unit.Dp(12), Right: unit.Dp(12)}
 						return btn.Layout(gtx)
 					}),
 				)
