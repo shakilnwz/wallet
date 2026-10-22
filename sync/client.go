@@ -3,6 +3,7 @@ package sync
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -32,16 +33,30 @@ func normalizeAddress(addr string) string {
 	return strings.TrimRight(addr, "/")
 }
 
+// errPeerOutdated is returned when the peer doesn't serve the current sync API.
+var errPeerOutdated = errors.New("peer is running an older Wallet version; update both devices")
+
+func checkStatus(resp *http.Response) error {
+	switch resp.StatusCode {
+	case http.StatusOK:
+		return nil
+	case http.StatusNotFound:
+		return errPeerOutdated
+	default:
+		return fmt.Errorf("peer returned HTTP %d", resp.StatusCode)
+	}
+}
+
 func (c *Client) Ping(peerAddr string) (string, error) {
-	url := normalizeAddress(peerAddr) + "/sync/ping"
+	url := normalizeAddress(peerAddr) + apiPrefix + "/ping"
 	resp, err := c.httpClient.Get(url)
 	if err != nil {
 		return "", err
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("peer returned status: %d", resp.StatusCode)
+	if err := checkStatus(resp); err != nil {
+		return "", err
 	}
 
 	var data struct {
@@ -58,14 +73,14 @@ func (c *Client) FullTwoWaySync(peerAddr string, database *db.DB) (pulledIns, pu
 	base := normalizeAddress(peerAddr)
 
 	// 1. PULL: Fetch remote package
-	pullResp, err := c.httpClient.Get(base + "/sync/package")
+	pullResp, err := c.httpClient.Get(base + apiPrefix + "/package")
 	if err != nil {
 		return 0, 0, 0, 0, fmt.Errorf("failed to fetch remote package: %w", err)
 	}
 	defer pullResp.Body.Close()
 
-	if pullResp.StatusCode != http.StatusOK {
-		return 0, 0, 0, 0, fmt.Errorf("remote pull error: HTTP %d", pullResp.StatusCode)
+	if err := checkStatus(pullResp); err != nil {
+		return 0, 0, 0, 0, fmt.Errorf("remote pull: %w", err)
 	}
 
 	var remotePkg models.SyncPackage
@@ -90,14 +105,14 @@ func (c *Client) FullTwoWaySync(peerAddr string, database *db.DB) (pulledIns, pu
 		return pulledIns, pulledUpd, 0, 0, err
 	}
 
-	pushResp, err := c.httpClient.Post(base+"/sync/merge", "application/json", bytes.NewReader(payload))
+	pushResp, err := c.httpClient.Post(base+apiPrefix+"/merge", "application/json", bytes.NewReader(payload))
 	if err != nil {
 		return pulledIns, pulledUpd, 0, 0, fmt.Errorf("failed to push to remote: %w", err)
 	}
 	defer pushResp.Body.Close()
 
-	if pushResp.StatusCode != http.StatusOK {
-		return pulledIns, pulledUpd, 0, 0, fmt.Errorf("remote merge error: HTTP %d", pushResp.StatusCode)
+	if err := checkStatus(pushResp); err != nil {
+		return pulledIns, pulledUpd, 0, 0, fmt.Errorf("remote merge: %w", err)
 	}
 
 	var pushResult struct {

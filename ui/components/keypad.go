@@ -8,6 +8,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
+	"github.com/shakilnwz/wallet/core/money"
 	"github.com/shakilnwz/wallet/ui/theme"
 )
 
@@ -23,12 +24,20 @@ func (k *Keypad) Layout(gtx layout.Context, th *theme.Theme, currentVal string, 
 	// Handle digit clicks
 	for i := 0; i <= 9; i++ {
 		if k.DigitBtns[i].Clicked(gtx) {
+			// BDT has two decimal places (paisa); ignore further digits.
+			if _, frac, ok := strings.Cut(currentVal, "."); ok && len(frac) >= 2 {
+				continue
+			}
 			newVal := currentVal
 			if newVal == "0" {
 				newVal = strconv.Itoa(i)
 			} else {
 				newVal += strconv.Itoa(i)
 			}
+			if _, err := money.Parse(newVal); err != nil {
+				continue // overflow
+			}
+			currentVal = newVal
 			onValChange(newVal)
 		}
 	}
@@ -52,12 +61,11 @@ func (k *Keypad) Layout(gtx layout.Context, th *theme.Theme, currentVal string, 
 	}
 
 	// Handle quick increment clicks
-	quickAmts := []float64{100, 500, 1000, 5000}
+	quickAmts := []int64{100, 500, 1000, 5000}
 	for i, amt := range quickAmts {
 		if k.QuickAddBtns[i].Clicked(gtx) {
-			cur, _ := strconv.ParseFloat(currentVal, 64)
-			cur += amt
-			onValChange(strconv.FormatFloat(cur, 'f', -1, 64))
+			cur, _ := money.Parse(currentVal) // empty or partial input counts as 0
+			onValChange(money.ToInput(cur + amt*100))
 		}
 	}
 

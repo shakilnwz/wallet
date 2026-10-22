@@ -12,6 +12,11 @@ import (
 	"github.com/shakilnwz/wallet/db"
 )
 
+// apiPrefix is versioned because v2 sends amounts as integer paisa
+// ("amount_paisa"). Older builds speak /sync/* with float amounts; giving them
+// a 404 makes mixed versions fail loudly instead of merging zero amounts.
+const apiPrefix = "/sync/v2"
+
 type Server struct {
 	database *db.DB
 	listener net.Listener
@@ -47,9 +52,9 @@ func (s *Server) Start(port int) (int, error) {
 	s.port = ln.Addr().(*net.TCPAddr).Port
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/sync/ping", s.handlePing)
-	mux.HandleFunc("/sync/package", s.handleGetPackage)
-	mux.HandleFunc("/sync/merge", s.handleMerge)
+	mux.HandleFunc(apiPrefix+"/ping", s.handlePing)
+	mux.HandleFunc(apiPrefix+"/package", s.handleGetPackage)
+	mux.HandleFunc(apiPrefix+"/merge", s.handleMerge)
 
 	s.server = &http.Server{
 		Handler:      mux,
