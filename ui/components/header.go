@@ -46,7 +46,7 @@ func (h *Header) Layout(
 
 	return layout.Inset{
 		Top:    unit.Dp(12),
-		Bottom: unit.Dp(10),
+		Bottom: unit.Dp(12),
 		Left:   unit.Dp(16),
 		Right:  unit.Dp(16),
 	}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
@@ -56,20 +56,9 @@ func (h *Header) Layout(
 			Alignment: layout.Middle,
 			Spacing:   layout.SpaceBetween,
 		}.Layout(gtx,
-			// Left: Menu Hamburger Button + Screen Title
+			// Left: Screen Title
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 				return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
-					// Hamburger Menu Vector Icon Button
-					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-						btn := material.IconButton(th.Theme, &h.MenuBtn, theme.IconMenu, "Menu")
-						btn.Background = theme.ColorSurfaceElevated
-						btn.Color = theme.ColorTextPrimary
-						btn.Size = unit.Dp(20)
-						btn.Inset = layout.UniformInset(unit.Dp(10))
-						return btn.Layout(gtx)
-					}),
-
-					layout.Rigid(layout.Spacer{Width: unit.Dp(12)}.Layout),
 
 					// Title & Subtitle
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
@@ -77,7 +66,7 @@ func (h *Header) Layout(
 							layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 								lbl := material.H6(th.Theme, title)
 								lbl.Color = theme.ColorTextPrimary
-								lbl.TextSize = unit.Sp(17)
+								lbl.TextSize = unit.Sp(28)
 								return lbl.Layout(gtx)
 							}),
 							layout.Rigid(func(gtx layout.Context) layout.Dimensions {
@@ -86,7 +75,7 @@ func (h *Header) Layout(
 								}
 								sub := material.Caption(th.Theme, subtitle)
 								sub.Color = theme.ColorTextMuted
-								sub.TextSize = unit.Sp(11)
+								sub.TextSize = unit.Sp(13)
 								return sub.Layout(gtx)
 							}),
 						)

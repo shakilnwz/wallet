@@ -70,10 +70,10 @@ func (b *BottomNav) Layout(
 		Right:  unit.Dp(16),
 	}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
-		return theme.Card(gtx, theme.ColorSurface, unit.Dp(24), func(gtx layout.Context) layout.Dimensions {
+		return theme.Card(gtx, theme.ColorSurface, unit.Dp(20), func(gtx layout.Context) layout.Dimensions {
 			return layout.Inset{
-				Top:    unit.Dp(6),
-				Bottom: unit.Dp(6),
+				Top:    unit.Dp(8),
+				Bottom: unit.Dp(8),
 				Left:   unit.Dp(8),
 				Right:  unit.Dp(8),
 			}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
@@ -99,8 +99,8 @@ func (b *BottomNav) Layout(
 							btn := material.IconButton(th.Theme, &b.AddBtn, theme.IconAdd, "Add Transaction")
 							btn.Background = theme.ColorPrimary
 							btn.Color = theme.ColorTextPrimary
-							btn.Size = unit.Dp(22)
-							btn.Inset = layout.Inset{Top: unit.Dp(10), Bottom: unit.Dp(10), Left: unit.Dp(18), Right: unit.Dp(18)}
+							btn.Size = unit.Dp(30)
+							btn.Inset = layout.Inset{Top: unit.Dp(14), Bottom: unit.Dp(14), Left: unit.Dp(14), Right: unit.Dp(14)}
 							return btn.Layout(gtx)
 						})
 					}),

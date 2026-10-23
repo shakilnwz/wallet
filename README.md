@@ -37,6 +37,13 @@ For instant local testing on your computer:
 go run ./cmd/wallet
 ```
 
+For automatic rebuild-and-restart while editing Go files, install Air locally once and run it:
+```bash
+GOBIN="$PWD/bin" go install github.com/air-verse/air@latest
+./bin/air
+```
+Air uses the checked-in `.air.toml` configuration. This is restart-based reload, so application state resets after each rebuild.
+
 ### 2. Build for Android (`.apk`)
 Build the release-ready Android APK using `gogio`:
 ```bash
