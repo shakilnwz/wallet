@@ -28,7 +28,7 @@ func (l *TxList) Layout(
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 
 	if len(transactions) == 0 {
-		return layout.Inset{Top: unit.Dp(24), Bottom: unit.Dp(24), Left: unit.Dp(16), Right: unit.Dp(16)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+		return layout.Inset{Top: unit.Dp(10), Bottom: unit.Dp(24), Left: unit.Dp(10), Right: unit.Dp(10)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			return theme.Card(gtx, theme.ColorSurface, unit.Dp(16), func(gtx layout.Context) layout.Dimensions {
 				return layout.Inset{Top: unit.Dp(28), Bottom: unit.Dp(28), Left: unit.Dp(16), Right: unit.Dp(16)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {

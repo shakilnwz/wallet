@@ -45,10 +45,10 @@ func (h *Header) Layout(
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 
 	return layout.Inset{
-		Top:    unit.Dp(12),
-		Bottom: unit.Dp(12),
-		Left:   unit.Dp(16),
-		Right:  unit.Dp(16),
+		Top:    unit.Dp(10),
+		Bottom: unit.Dp(10),
+		Left:   unit.Dp(10),
+		Right:  unit.Dp(10),
 	}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		return layout.Flex{

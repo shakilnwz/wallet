@@ -33,7 +33,7 @@ func (a *AnalyticsView) Layout(
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	a.List.Axis = layout.Vertical
 
-	return layout.Inset{Left: unit.Dp(16), Right: unit.Dp(16)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+	return layout.Inset{Left: unit.Dp(10), Right: unit.Dp(10)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		return a.List.Layout(gtx, 2, func(gtx layout.Context, idx int) layout.Dimensions {
 			if idx == 0 {

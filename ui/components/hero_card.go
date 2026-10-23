@@ -20,9 +20,9 @@ func (h *HeroCard) Layout(gtx layout.Context, th *theme.Theme, summary *models.A
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 
 	return layout.Inset{
-		Left:   unit.Dp(16),
-		Right:  unit.Dp(16),
-		Bottom: unit.Dp(14),
+		Left:   unit.Dp(10),
+		Right:  unit.Dp(10),
+		Bottom: unit.Dp(10),
 	}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		return theme.Card(gtx, theme.ColorSurface, unit.Dp(20), func(gtx layout.Context) layout.Dimensions {
@@ -41,7 +41,7 @@ func (h *HeroCard) Layout(gtx layout.Context, th *theme.Theme, summary *models.A
 							layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 								caption := material.Caption(th.Theme, fmt.Sprintf("NET BALANCE (%s)", monthLabel))
 								caption.Color = theme.ColorTextMuted
-								caption.TextSize = unit.Sp(11)
+								caption.TextSize = unit.Sp(13)
 								return caption.Layout(gtx)
 							}),
 							layout.Rigid(func(gtx layout.Context) layout.Dimensions {
@@ -53,7 +53,7 @@ func (h *HeroCard) Layout(gtx layout.Context, th *theme.Theme, summary *models.A
 								}
 								lbl := material.Caption(th.Theme, statusText)
 								lbl.Color = statusColor
-								lbl.TextSize = unit.Sp(11)
+								lbl.TextSize = unit.Sp(13)
 								return lbl.Layout(gtx)
 							}),
 						)

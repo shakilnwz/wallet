@@ -395,45 +395,16 @@ func (a *App) layoutHomeScreen(gtx layout.Context) layout.Dimensions {
 			return a.HeroCard.Layout(gtx, a.Theme, a.AccountSummary, theme.FormatMonthDisplay(a.SelectedMonth))
 		}),
 
-		// Quick Action Shortcuts Bar (Touch-Friendly)
-		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			gtx.Constraints.Min.X = gtx.Constraints.Max.X
-			return layout.Inset{Left: unit.Dp(16), Right: unit.Dp(16), Bottom: unit.Dp(12)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-				gtx.Constraints.Min.X = gtx.Constraints.Max.X
-				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-					layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
-						btn := material.Button(a.Theme.Theme, &a.HomeQuickAddBtn, "+ Add Entry")
-						btn.Background = theme.ColorPrimary
-						btn.Color = theme.ColorTextPrimary
-						btn.CornerRadius = unit.Dp(12)
-						btn.TextSize = unit.Sp(13)
-						btn.Inset = layout.Inset{Top: unit.Dp(11), Bottom: unit.Dp(11)}
-						return btn.Layout(gtx)
-					}),
-					layout.Rigid(layout.Spacer{Width: unit.Dp(10)}.Layout),
-					layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
-						btn := material.Button(a.Theme.Theme, &a.HomeViewAllBtn, "Full History >")
-						btn.Background = theme.ColorSurfaceElevated
-						btn.Color = theme.ColorTextPrimary
-						btn.CornerRadius = unit.Dp(12)
-						btn.TextSize = unit.Sp(13)
-						btn.Inset = layout.Inset{Top: unit.Dp(11), Bottom: unit.Dp(11)}
-						return btn.Layout(gtx)
-					}),
-				)
-			})
-		}),
-
 		// Recent Activity Section Header
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
-			return layout.Inset{Left: unit.Dp(18), Right: unit.Dp(18), Top: unit.Dp(4), Bottom: unit.Dp(8)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+			return layout.Inset{Left: unit.Dp(16), Right: unit.Dp(16), Top: unit.Dp(4), Bottom: unit.Dp(4)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 				gtx.Constraints.Min.X = gtx.Constraints.Max.X
 				return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle, Spacing: layout.SpaceBetween}.Layout(gtx,
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 						lbl := material.Caption(a.Theme.Theme, "RECENT ACTIVITY")
 						lbl.Color = theme.ColorTextMuted
-						lbl.TextSize = unit.Sp(11)
+						lbl.TextSize = unit.Sp(13)
 						return lbl.Layout(gtx)
 					}),
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
@@ -441,8 +412,8 @@ func (a *App) layoutHomeScreen(gtx layout.Context) layout.Dimensions {
 						btn.Background = theme.ColorSurface
 						btn.Color = theme.ColorPrimary
 						btn.CornerRadius = unit.Dp(6)
-						btn.TextSize = unit.Sp(11)
-						btn.Inset = layout.Inset{Top: unit.Dp(3), Bottom: unit.Dp(3), Left: unit.Dp(8), Right: unit.Dp(8)}
+						btn.TextSize = unit.Sp(13)
+						btn.Inset = layout.Inset{Top: unit.Dp(8), Bottom: unit.Dp(8), Left: unit.Dp(16), Right: unit.Dp(16)}
 						return btn.Layout(gtx)
 					}),
 				)
